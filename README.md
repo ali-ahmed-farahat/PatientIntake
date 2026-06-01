@@ -1,624 +1,181 @@
-# Patient Intake Questionnaire System
-
-A bilingual (English / Arabic) medical intake questionnaire and patient assessment platform built using:
-
-- HTML5
-- CSS3
-- JavaScript
-- Python Flask
-- SQLite
-
-The system digitizes a comprehensive patient intake process, allowing patients to complete medical questionnaires online while providing healthcare professionals with structured, searchable, and analyzable medical data.
-
----
-
-# Overview
-
-Traditional patient intake forms are often paper-based or stored as PDFs, making them difficult to manage, search, analyze, and integrate into clinical workflows.
-
-This project transforms a multi-page medical questionnaire into an interactive web application that:
-
-- Collects patient information digitally
-- Stores responses in a database
-- Supports English and Arabic languages
-- Organizes medical history in a structured format
-- Supports document and image uploads
-- Provides a foundation for AI-assisted medical workflows
-
----
-
-# Features
-
-## Bilingual User Interface
-
-The questionnaire is fully bilingual:
-
-- English
-- Arabic
-
-All major sections, labels, medical terms, and disease descriptions are provided in both languages.
-
----
-
-## Personal Information
-
-Collects:
-
-- Patient Code
-- Full Name
-- Age
-- Nationality
-- Occupation
-- Mobile Number
-- Email Address
-
----
-
-## Marital Status & Fertility History
-
-Supports:
-
-- Single
-- Married
-- Divorced
-- Widow
-
-Additional information:
-
-- Duration of Marriage
-- Number of Wives
-- Number of Children
-- Youngest Child Age
-- Fertility Intentions
-- Previous Attempts to Conceive
-- Contraception Methods
-- Divorce Related to Medical Complaint
-
----
-
-## Allergies
-
-Records:
-
-- Drug Allergies
-- Other Allergies
-
----
-
-## Referral Tracking
-
-Tracks how patients discovered the clinic:
-
-- Google
-- Facebook
-- Instagram
-- TikTok
-- Referral
-
----
-
-## Chronic Diseases & Medical History
-
-The system contains a comprehensive disease assessment section.
-
-### Covered Systems
-
-1. Heart & Vascular
-2. Metabolic & Endocrine
-3. Neurological
-4. Psychiatric
-5. Liver & Kidney
-6. Sleeping & Breathing
-7. Immunity & Inflammatory
-8. Oncology & Cancer Treatment
-9. Surgical History
-
-For each condition the patient can provide:
-
-- Disease Name
-- Duration
-- Control Status
-- Medication & Dosage
-- Sexual Relevance
-
----
-
-## Medical Education Layer
-
-Patients are provided with simplified explanations for common medical conditions.
-
-### Example
-
-**Hypertension**
-
-High blood pressure
-
-**Diabetes**
-
-High blood sugar caused by impaired insulin function
-
-This improves patient understanding and data accuracy.
-
----
-
-## Lifestyle & Habits Assessment
-
-### Sleep
-
-- Sleep Hours
-- Sleep Quality
-- Sleep Type
-- Sleep Apnea Symptoms
-- Daytime Sleepiness
-
-### Physical Activity
-
-- Exercise Frequency
-- Exercise Type
-- Sitting Hours
-
-### Body Metrics
-
-- Weight
-- Height
-- BMI
-- Waist Circumference
-
-### Substance Use
-
-- Smoking Status
-- Cigarettes Per Day
-- Alcohol Consumption
-- Recreational Drug Use
-
-### Sexual Behavior Factors
-
-- Pornography Usage
-- Masturbation
-- Partner-Specific Difficulties
-
----
-
-## Psychological & Occupational Assessment
-
-Records:
-
-- Stress Level
-- Anxiety
-- Depression
-- Relationship Conflict
-- Performance Anxiety
-- Sedentary Work
-- Night Shift Work
-- Heat Exposure
-- Toxin Exposure
-
-Recovery indicators:
-
-- Energy Level
-- Libido Score
-- Recovery Score
-
----
-
-## Clinical Complaint Classification
-
-Supports multiple clinical pathways:
-
-### Sexual Health
-
-- Erectile Dysfunction
-- Premature Ejaculation
-- Delayed Ejaculation
-- Low Libido
-
-### Fertility
-
-- Male Infertility
-- Delayed Conception
-
-### Hormonal
-
-- Low Testosterone Symptoms
-
-### Structural Conditions
-
-- Peyronie's Disease
-- Penile Curvature
-- Penile Size Concerns
-
-### Pain Conditions
-
-- Pelvic Pain
-- Genital Pain
-- Testicular Pain
-
-### Infection
-
-- Sexually Transmitted Infections
-
-### Follow-up
-
-- Routine Follow-Up Visits
-
----
-
-## Physician Assessment Notes
-
-Dedicated section for healthcare providers to document:
-
-- Initial Assessment
-- Observations
-- Treatment Considerations
-- Follow-Up Notes
-
----
-
-# File Upload System
-
-The platform supports medical document uploads.
-
-## Drug Image Upload
-
-Patients can upload:
-
-- Medication Boxes
-- Prescription Labels
-- Drug Packaging
-- Medication Bottles
-
-Purpose:
-
-- Medication Identification
-- Active Ingredient Detection
-- AI-Assisted Drug Recognition
-
----
-
-## Current Medications
-
-Patients can manually enter:
-
-- Medication Name
-- Dosage
-- Frequency
-- Duration
-
----
-
-## Medical History Documents
-
-Supported file types:
-
-- PDF
-- JPG
-- JPEG
-- PNG
-
-Examples:
-
-- Referral Letters
-- Previous Medical Reports
-- Hospital Discharge Summaries
-- Consultation Notes
-
----
-
-## Investigation & Laboratory Results
-
-Patients can upload:
-
-### Blood Tests
-
-- CBC
-- Lipid Profile
-- HbA1c
-- Liver Function
-- Kidney Function
-
-### Hormonal Panels
-
-- Testosterone
-- Free Testosterone
-- LH
-- FSH
-- Prolactin
-- Estradiol
-- SHBG
-
-### Fertility Tests
-
-- Semen Analysis
-
-### Imaging
-
-- Ultrasound
-- MRI
-- CT Scan
-
----
-
-# AI Medication Recognition (Roadmap)
-
-Future versions will support AI-powered medication analysis.
-
-## OCR Processing
-
-The system will:
-
-1. Scan uploaded medication images
-2. Extract visible text
-3. Identify medication names
-
-Possible technologies:
-
-- Tesseract OCR
-- EasyOCR
-
----
-
-## Drug Database Lookup
-
-Planned integrations:
-
-### openFDA
-
-Used for:
-
-- Drug Labels
-- Drug Information
-- FDA Safety Data
-
-### DrugBank
-
-Used for:
-
-- Drug Interactions
-- Active Ingredients
-- Clinical Information
-
----
-
-## AI Clinical Assistance
-
-Future features:
-
-### Medication Analysis
-
-- Duplicate Medication Detection
-- Drug Interaction Screening
-- Fertility Impact Screening
-- Testosterone Impact Analysis
-
-### Investigation Analysis
-
-Automatic review of:
-
-- Hormonal Profiles
-- Semen Analysis
-- Blood Tests
-
-### Clinical Risk Scoring
-
-Potential support for:
-
-- Cardiovascular Risk
-- Metabolic Risk
-- Sexual Health Risk
-
----
-
-# Form Validation
-
-The system prevents incomplete submissions.
-
-Validation includes:
-
-- Required Fields
-- Browser Validation
-- JavaScript Validation
-- Data Integrity Checks
-
-Users cannot submit incomplete questionnaires.
-
----
-
-# Architecture
+# Patient Intake Questionnaire
+
+A bilingual medical intake web app for collecting patient questionnaire data, medication details, medical history, investigation results, and uploaded medical files.
+
+The app is built with Flask, SQLite, HTML, CSS, and JavaScript. It includes optional medication lookup through openFDA, optional AI image scanning through OpenAI Vision, and optional DrugBank support when a DrugBank API key is available.
+
+## Features
+
+- Bilingual English / Arabic intake questionnaire
+- Client-side validation for required form fields
+- SQLite storage for submitted intake forms
+- Protected submissions page for reviewing saved forms
+- Drug and package photo uploads
+- Investigation image/PDF uploads
+- Medication text entry for current medications
+- Medical history and investigation result summaries
+- openFDA drug label lookup
+- Optional OpenAI Vision extraction from medication images
+- Optional local OCR fallback with Pillow and pytesseract
+- Optional DrugBank lookup when configured
+
+## Project Structure
 
 ```text
-Patient
-   ↓
-HTML Form
-   ↓
-JavaScript
-   ↓
-Flask API
-   ↓
-SQLite Database
+.
+|-- app.py
+|-- index.html
+|-- script.js
+|-- style.css
+|-- requirements.txt
+|-- README.md
+|-- .gitignore
+|-- APIkey              # local secrets file, ignored by git
+|-- intake.db           # local SQLite database, ignored by git
+`-- uploads/            # uploaded files, ignored by git
 ```
 
----
+## Requirements
 
-# Technology Stack
+- Python 3.10 or newer
+- pip
+- Optional: Tesseract OCR installed on the operating system for local OCR fallback
 
-## Frontend
+Python packages are listed in `requirements.txt`.
 
-- HTML5
-- CSS3
-- JavaScript
+## Setup
 
-## Backend
+Create and activate a virtual environment:
 
-- Python
-- Flask
-- Flask-CORS
-
-## Database
-
-- SQLite
-
-## Future Integrations
-
-- PostgreSQL
-- OpenFDA
-- DrugBank
-- OCR Engines
-- AI Services
-
----
-
-# Project Structure
-
-```text
-PatientIntake/
-│
-├── app.py
-├── intake.db
-├── requirements.txt
-├── README.md
-│
-├── templates/
-│   └── index.html
-│
-├── static/
-│   ├── style.css
-│   ├── script.js
-│
-├── uploads/
-│   ├── drug_images/
-│   ├── medical_history/
-│   └── investigations/
-│
-└── screenshots/
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
----
+Install dependencies:
 
-# Installation
-
-## Clone Repository
-
-```bash
-git clone https://github.com/KhaledFadi/PatientIntake.git
-
-cd PatientIntake
-```
-
-## Create Virtual Environment
-
-### Windows
-
-```bash
-python -m venv venv
-
-venv\Scripts\activate
-```
-
-### Linux / Mac
-
-```bash
-python3 -m venv venv
-
-source venv/bin/activate
-```
-
-## Install Dependencies
-
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-## Run Application
+Run the app:
 
-```bash
+```powershell
 python app.py
 ```
 
-Application URL:
+Open the app:
 
 ```text
-http://127.0.0.1:5000
+http://127.0.0.1:5000/
 ```
 
----
+## API Keys
 
-# Database
+The app reads API keys from environment variables first. If they are not set, it reads them from a local `APIkey` file in the project folder.
 
-Database file:
+Supported keys:
 
 ```text
-intake.db
+OPENFDA_API_KEY=your_openfda_key
+OPENAI_API_KEY=your_openai_key
+DRUGBANK_API_KEY=your_drugbank_key
 ```
 
-Main table:
+For openFDA only, `APIkey` may also contain just the bare key:
 
 ```text
-intake_forms
+your_openfda_key
 ```
 
-Stores:
+`APIkey` is listed in `.gitignore` and should not be committed.
 
-- Patient Information
-- Medical History
-- Lifestyle Data
-- Clinical Complaints
-- Uploaded File References
-- Full JSON Questionnaire Data
+## Medication Scanning
 
----
+The medication upload section supports:
 
-# Viewing Submitted Forms
+- Drug/package photos
+- Current medication text
+- Medical history summary
+- Investigation/lab result summary
+- Investigation files or photos
 
-Admin page:
+When the user clicks `Scan Uploads`, the server:
+
+1. Saves uploaded files under `uploads/`.
+2. Extracts medication text from images if OpenAI Vision or local OCR is configured.
+3. Parses possible medication names from image text and manual medication text.
+4. Looks up drug label data through openFDA.
+5. Checks optional DrugBank data when `DRUGBANK_API_KEY` is set.
+6. Stores the scan result with the normal form submission.
+
+The scan is for intake documentation support only. Clinicians must confirm all medication names, doses, warnings, allergies, and interactions before using them for care decisions.
+
+## Routes
+
+```text
+GET  /              Main intake form
+GET  /style.css     Stylesheet
+GET  /script.js     Browser logic
+POST /submit        Save completed intake form
+POST /scan-drugs    Upload files and run medication lookup
+GET  /submissions   Password-protected submitted forms
+GET  /uploads/...   Password-protected uploaded files
+```
+
+## Submitted Forms
+
+Submitted forms are stored in `intake.db`.
+
+View submissions:
 
 ```text
 http://127.0.0.1:5000/submissions
 ```
 
-Displays:
+The page uses HTTP Basic Auth. The password is controlled by:
 
-- Patient Details
-- Questionnaire Responses
-- Uploaded Documents
+```text
+SUBMISSIONS_PASSWORD=your_password
+```
 
----
+If not set, the default password is:
 
-# Future Enhancements
+```text
+Doctor
+```
 
-## Security
+## Local Data And Privacy
 
-- Authentication
-- Authorization
-- HTTPS
-- Role-Based Access Control
+This app stores sensitive medical information locally:
 
-## Clinical Dashboard
+- `intake.db`
+- `uploads/`
+- `APIkey`
+- generated logs
 
-- Patient Search
-- Timeline View
-- Advanced Filtering
+These files are ignored by git. Do not deploy this app publicly without adding proper production security, HTTPS, authentication, authorization, access logging, backups, and clinical data privacy controls.
 
-## Reporting
+## Optional OCR Notes
 
-- PDF Export
-- Printable Reports
-- Clinical Summaries
+`pytesseract` is a Python wrapper. For OCR to work, the Tesseract executable must also be installed on the machine and available on the system path.
 
-## Notifications
+If OCR is not installed, the app still supports manual medication text and openFDA lookup.
 
-- Email Notifications
-- SMS Reminders
-- Follow-Up Scheduling
+## Development Notes
 
-## Infrastructure
+Useful checks:
 
-- PostgreSQL Migration
-- Docker Support
-- AWS Deployment
-- Azure Deployment
+```powershell
+python -m py_compile app.py
+```
 
----
+Quick Flask smoke test:
 
-Patient Intake Questionnaire System
+```powershell
+python -c "from app import app; c=app.test_client(); assert c.get('/').status_code == 200; print('ok')"
+```
 
-Built using Python Flask, HTML, CSS, JavaScript, and SQLite.
+## Medical Disclaimer
+
+This project is an intake documentation tool. It is not a diagnostic system, treatment system, prescribing system, or replacement for clinician review.
