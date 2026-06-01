@@ -133,13 +133,9 @@ Patients are provided with simplified explanations for common medical conditions
 
 High blood pressure
 
-ارتفاع ضغط الدم
-
 **Diabetes**
 
 High blood sugar caused by impaired insulin function
-
-مرض السكري الناتج عن اضطراب الإنسولين
 
 This improves patient understanding and data accuracy.
 
