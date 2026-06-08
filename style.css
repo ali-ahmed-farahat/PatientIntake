@@ -283,7 +283,6 @@ button[type="submit"]:disabled {
   padding: 10px 22px;
   font-size: 15px;
 }
-
 /* Purpose: explanatory blocks and conditional field wrappers. */
 .section-instruction, .field-wrapper {
   border-radius: 8px;

@@ -545,7 +545,7 @@ formElement.addEventListener("submit", async function (e) {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Submission failed.");
-    showMessage("Submitted / تم الإرسال", formatPipelineMessage(result));
+    showMessage("Submitted / تم الإرسال", formatPipelineMessage(result), submitButton);
   } catch (error) {
     showMessage(
       "Submission Error / خطأ في الإرسال",

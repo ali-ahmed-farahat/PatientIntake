@@ -19,6 +19,7 @@ from agent_utils import parse_json_object, request_json
 from evidence_reviewer_agent import run_evidence_reviewer_agent
 from lifestyle_agent import run_lifestyle_agent
 from rag_store import build_clinical_context, index_rag_files, rag_status, search_rag
+from report_agent import build_arabic_pdf_report, run_report_agent, save_report_pdf
 from research_agent import run_research_agent
 
 app = Flask(__name__)
@@ -71,6 +72,7 @@ GEMINI_API_KEY = load_secret("GEMINI_API_KEY")
 GEMINI_CLINICAL_MODEL = os.environ.get("GEMINI_CLINICAL_MODEL", "gemini-2.5-flash")
 GEMINI_RESEARCH_MODEL = os.environ.get("GEMINI_RESEARCH_MODEL", "gemini-2.5-flash")
 GEMINI_EVIDENCE_REVIEWER_MODEL = os.environ.get("GEMINI_EVIDENCE_REVIEWER_MODEL", "gemini-2.5-flash")
+GEMINI_REPORT_MODEL = os.environ.get("GEMINI_REPORT_MODEL", "gemini-2.5-flash")
 
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "bmp", "tif", "tiff"}
 ALLOWED_INVESTIGATION_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | {"pdf"}
@@ -504,6 +506,39 @@ def default_clinical_query(data):
         return f"Clinical review for men's sexual health symptoms: {context}"
     return "Clinical review for men's sexual health symptoms, medication safety, and guideline context."
 
+def attach_report_agent_output(pipeline, data=None):
+    """Run the final report agent and save its structured report as a PDF."""
+    data = data or {}
+    report_result = run_report_agent(
+        pipeline,
+        api_key=GEMINI_API_KEY,
+        model_name=GEMINI_REPORT_MODEL,
+    )
+    pipeline["report_agent"] = report_result
+    pipeline["final_report"] = report_result.get("report")
+    arabic_pdf_report, translation_error = build_arabic_pdf_report(
+        report_result.get("report") or {},
+        api_key=GEMINI_API_KEY,
+        model_name=GEMINI_REPORT_MODEL,
+    )
+    if translation_error:
+        pipeline["report_pdf_translation_error"] = translation_error
+
+    try:
+        pipeline["report_pdf"] = save_report_pdf(
+            arabic_pdf_report,
+            upload_dir=UPLOAD_DIR,
+            submission_id=pipeline.get("submission_id"),
+            patient_name=data.get("fullName") or data.get("full_name"),
+            code_no=data.get("codeNo") or data.get("code_no"),
+            arabic=True,
+        )
+    except (OSError, RuntimeError) as exc:
+        pipeline["report_pdf"] = {"error": str(exc)}
+
+    pipeline["stopped_after"] = "report_agent"
+    return pipeline
+
 def run_full_clinical_pipeline(data, submission_id=None):
     """Run the diagrammed workflow: lifestyle triage, then clinical and research agents if needed."""
     pipeline = {
@@ -513,6 +548,7 @@ def run_full_clinical_pipeline(data, submission_id=None):
             "clinical_agent",
             "research_agent",
             "evidence_reviewer_agent",
+            "report_agent",
         ],
         "submission_id": submission_id,
         "status": "started",
@@ -523,7 +559,7 @@ def run_full_clinical_pipeline(data, submission_id=None):
             "status": "error",
             "error": "GEMINI_API_KEY is not configured.",
         })
-        return pipeline
+        return attach_report_agent_output(pipeline, data)
 
     lifestyle_result = run_lifestyle_agent(data, GEMINI_API_KEY)
     pipeline["lifestyle_agent"] = lifestyle_result
@@ -575,7 +611,7 @@ def run_full_clinical_pipeline(data, submission_id=None):
             "evidence_review": evidence_review_result.get("report"),
         },
     })
-    return pipeline
+    return attach_report_agent_output(pipeline, data)
 
 def init_db():
     """Create the intake_forms SQLite table if it does not already exist."""
@@ -620,7 +656,10 @@ def uploaded_file(filename):
         return Response("Invalid upload path.", 400)
 
     directory = os.path.join(UPLOAD_DIR, os.path.dirname(normalized))
-    return send_from_directory(directory, os.path.basename(normalized))
+    response = send_from_directory(directory, os.path.basename(normalized))
+    if normalized.replace("\\", "/").startswith("reports/"):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
 
 @app.route("/scan-drugs", methods=["POST"])
 def scan_drugs():
@@ -705,6 +744,9 @@ def render_ai_report(pipeline):
     """Render the clinical pipeline result as HTML for the submissions page."""
     if not pipeline:
         return '<p class="ai-missing">No AI report available for this submission.</p>'
+
+    def safe_escape(value):
+        return escape("" if value is None else str(value))
 
     status = pipeline.get("status", "")
     stopped_after = pipeline.get("stopped_after", "")
@@ -820,6 +862,48 @@ def render_ai_report(pipeline):
           {render_list("Limitations", er_report.get("limitations", []))}
         </div>''')
 
+    # Purpose: render the final structured report and PDF link.
+    report_agent = pipeline.get("report_agent", {})
+    final_report = report_agent.get("report") or pipeline.get("final_report") or {}
+    if final_report and not any(key in final_report for key in ("executive_summary", "patient_snapshot", "report_type")):
+        final_report = {}
+    report_pdf = pipeline.get("report_pdf") or {}
+
+    if final_report:
+        snapshot = final_report.get("patient_snapshot") or {}
+        pdf_error_html = ""
+        if report_pdf.get("error"):
+            pdf_error_html = f'<div class="ai-flag">PDF generation failed: {escape(report_pdf["error"])}</div>'
+
+        html_parts.append(f'''
+        <div class="ai-section">
+          <div class="ai-section-title">Final Report Agent - Structured Output</div>
+          <div class="ai-summary-box">
+            <p>{safe_escape(final_report.get("executive_summary", ""))}</p>
+            <span class="ai-badge" style="background:#1f4e79">Type: {safe_escape(final_report.get("report_type", ""))}</span>
+            <span class="ai-badge" style="background:#607d8b">Confidence: {safe_escape(final_report.get("confidence", ""))}</span>
+          </div>
+          {pdf_error_html}
+          {render_list("Clinical Summary", [final_report.get("clinical_summary", "")])}
+          {render_list("Findings", final_report.get("findings", []))}
+          {render_list("Citations", final_report.get("citations") or final_report.get("source_citations", []))}
+          <div class="ai-list"><strong style="color:#1f4e79">Patient Snapshot</strong>
+            <ul>
+              <li>Submission ID: {safe_escape(snapshot.get("submission_id", ""))}</li>
+              <li>Age: {safe_escape(snapshot.get("age", ""))}</li>
+              <li>Sex: {safe_escape(snapshot.get("sex", ""))}</li>
+              <li>Question: {safe_escape(snapshot.get("presenting_question", ""))}</li>
+            </ul>
+          </div>
+          {render_list("Urgent Safety Alerts", final_report.get("urgent_safety_alerts", []), danger=True)}
+          {render_list("Clinical Findings", final_report.get("clinical_findings", []))}
+          {render_list("Medication Safety", final_report.get("medication_safety", []), warn=True)}
+          {render_list("Evidence Summary", final_report.get("evidence_summary", []))}
+          {render_list("Clinician Actions", final_report.get("clinician_actions", []))}
+          {render_list("Missing Information", final_report.get("missing_information", []), warn=True)}
+          {render_list("Limitations", final_report.get("limitations", []))}
+        </div>''')
+
     return "\n".join(html_parts)
 
 
@@ -904,17 +988,30 @@ main{max-width:1100px;margin:auto}
 h1{margin:0 0 22px;color:#1f4e79}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
 a{color:#1f4e79;font-weight:700;text-decoration:none}
+.ai-download-button{display:inline-block;margin:4px 0 10px;padding:10px 14px;border-radius:6px;background:#1f4e79;color:#fff;font-weight:700;text-decoration:none}
+.ai-download-button:hover{background:#163a5f}
 .submission,.empty{background:#fff;border-radius:8px}
 .submission{margin-bottom:28px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.09)}
 .submission h2{margin:0 0 14px;color:#1f4e79;font-size:20px}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px;padding:12px;border-radius:6px;background:#f0f6ff}
+.submission-tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.submission-tab{display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border:1px solid #c9d7e6;border-radius:6px;background:#eef4fb;color:#1f4e79;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.submission-download{border-color:#1f4e79;background:#1f4e79;color:#fff;text-decoration:none}
+.submission-download:hover{background:#163a5f}
+.submission-tab-active{border-color:#1f4e79;background:#dcecff}
+.submission-tab-muted{color:#6b7280;background:#f5f7fa;cursor:not-allowed}
+.submission-panel[hidden]{display:none}
 .form-details{margin-bottom:20px;border:1px solid #d4dce7;border-radius:6px;overflow:hidden}
 .form-details summary{padding:10px 14px;background:#eef4fb;color:#1f4e79;font-weight:700;cursor:pointer}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 th,td{padding:9px;border:1px solid #d4dce7;text-align:left;vertical-align:top;word-break:break-word}
 th{width:260px;background:#eef4fb;color:#1f4e79}
 .ai-report{border:2px solid #1f4e79;border-radius:8px;overflow:hidden}
-.ai-report-title{padding:10px 16px;background:#1f4e79;color:#fff;font-weight:700;font-size:15px;letter-spacing:0}
+.ai-report-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#1f4e79;color:#fff;font-weight:700;font-size:15px;letter-spacing:0;cursor:pointer;list-style:none}
+.ai-report-title::-webkit-details-marker{display:none}
+.ai-report-title::after{content:"+";width:22px;height:22px;border:1px solid rgba(255,255,255,.55);border-radius:4px;text-align:center;line-height:20px;font-size:18px}
+.ai-report[open] .ai-report-title::after{content:"-"}
+.ai-report-content{background:#fff}
 .ai-section{padding:16px;border-bottom:1px solid #d4dce7}
 .ai-section:last-child{border-bottom:0}
 .ai-section-title{margin-bottom:10px;color:#1f4e79;font-weight:700;font-size:15px}
@@ -982,6 +1079,17 @@ def submissions():
             )
 
             ai_html = render_ai_report(pipeline)
+            report_pdf = (pipeline or {}).get("report_pdf") or {}
+            form_panel_id = f"form-panel-{row['id']}"
+            ai_panel_id = f"ai-panel-{row['id']}"
+            pdf_button = '<span class="submission-tab submission-tab-muted">Download PDF Report</span>'
+            if report_pdf.get("url"):
+                pdf_button = (
+                    f'<a class="submission-tab submission-download" href="{escape(report_pdf["url"])}" '
+                    f'target="_blank" download>Download PDF Report</a>'
+                )
+            elif report_pdf.get("error"):
+                pdf_button = f'<span class="submission-tab submission-tab-muted">PDF unavailable</span>'
 
             cards.append(f"""
               <article class="submission">
@@ -993,14 +1101,20 @@ def submissions():
                   <span><strong>Email:</strong> {escape(str(row["email"] or ""))}</span>
                 </div>
 
-                <details class="form-details">
-                  <summary>Patient Form Answers</summary>
-                  <table><tbody>{answers}</tbody></table>
-                </details>
+                <div class="submission-tabs">
+                  {pdf_button}
+                  <button class="submission-tab" type="button" data-panel-target="{form_panel_id}" aria-controls="{form_panel_id}" aria-expanded="false">Patient Form Answers</button>
+                  <button class="submission-tab" type="button" data-panel-target="{ai_panel_id}" aria-controls="{ai_panel_id}" aria-expanded="false">AI Clinical Report</button>
+                </div>
 
-                <div class="ai-report">
-                  <div class="ai-report-title">AI Clinical Report</div>
+                <div id="{form_panel_id}" class="submission-panel form-details" hidden>
+                  <table><tbody>{answers}</tbody></table>
+                </div>
+
+                <div id="{ai_panel_id}" class="submission-panel ai-report" hidden>
+                  <div class="ai-report-content">
                   {ai_html}
+                  </div>
                 </div>
               </article>
             """)
@@ -1024,6 +1138,28 @@ def submissions():
     </div>
     {submissions_html}
   </main>
+  <script>
+    document.addEventListener("click", function (event) {{
+      const button = event.target.closest("[data-panel-target]");
+      if (!button) return;
+      const card = button.closest(".submission");
+      const panel = document.getElementById(button.dataset.panelTarget);
+      if (!card || !panel) return;
+
+      const shouldOpen = panel.hidden;
+      card.querySelectorAll(".submission-panel").forEach(function (item) {{
+        item.hidden = true;
+      }});
+      card.querySelectorAll("[data-panel-target]").forEach(function (item) {{
+        item.setAttribute("aria-expanded", "false");
+        item.classList.remove("submission-tab-active");
+      }});
+
+      panel.hidden = !shouldOpen;
+      button.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+      button.classList.toggle("submission-tab-active", shouldOpen);
+    }});
+  </script>
 </body>
 </html>
 """
@@ -1073,6 +1209,7 @@ def submit_form():
     return jsonify({
         "message": "Form submitted successfully and clinical workflow completed.",
         "submission_id": submission_id,
+        "report_pdf": pipeline_result.get("report_pdf"),
         "pipeline": pipeline_result,
     })
 
