@@ -4,8 +4,8 @@ import re
 import textwrap
 from datetime import datetime
 
-from agent_utils import compact_text
-from crewai_agent_tools import run_crewai_json_agent
+from core.agent_utils import compact_text
+from tools.crewai_agent_tools import run_crewai_json_agent
 
 
 GEMINI_REPORT_MODEL = "gemini-2.5-flash"

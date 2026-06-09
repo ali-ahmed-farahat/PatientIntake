@@ -1,3 +1,3 @@
-from app import app
+from api.main import app
 
 handler = app

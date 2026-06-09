@@ -1,6 +1,6 @@
 import json
 
-from crewai_agent_tools import run_crewai_json_agent
+from tools.crewai_agent_tools import run_crewai_json_agent
 
 
 # Purpose: tell Gemini exactly what structured clinical memo to return.

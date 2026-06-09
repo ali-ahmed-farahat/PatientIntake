@@ -1,7 +1,7 @@
 import json
 import os
 
-from agent_utils import parse_json_object
+from core.agent_utils import parse_json_object
 
 
 def _load_crewai():

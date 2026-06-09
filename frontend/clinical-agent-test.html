@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clinical Agent Test</title>
+  <link rel="stylesheet" href="/clinical-agent-test.css">
+</head>
+<body>
+  <main>
+    <h1>Clinical Agent Test</h1>
+    <form id="agent-form">
+      <label>
+        Query
+        <textarea id="query">erectile dysfunction medication safety</textarea>
+      </label>
+      <label>
+        Current medications
+        <textarea id="current-medications">sildenafil; nitroglycerin</textarea>
+      </label>
+      <label>
+        Medical history
+        <textarea id="medical-history">ischemic heart disease</textarea>
+      </label>
+      <label>
+        Top results
+        <input id="top-k" type="number" min="1" max="12" value="1">
+      </label>
+      <button type="submit">Run Agent</button>
+    </form>
+    <section id="result" class="result-panel">
+      <div class="muted">Ready.</div>
+    </section>
+    <details>
+      <summary>Raw JSON</summary>
+      <pre id="raw-json">No result yet.</pre>
+    </details>
+  </main>
+  <script src="/clinical-agent-test.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+{% macro render_list(title, items, warn=False, danger=False) -%}
+  {% if items %}
+    {% set color = "#b71c1c" if danger else ("#e65100" if warn else "#1f4e79") %}
+    <div class="ai-list">
+      <strong style="color:{{ color }}">{{ title }}</strong>
+      <ul>
+        {% for item in items %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro render_flags(flags) -%}
+  {% if flags %}
+    {% for flag in flags %}
+      <div class="ai-flag"><strong>{{ flag.get("drug", "") }}</strong>: {{ flag.get("message", "") }}</div>
+    {% endfor %}
+  {% else %}
+    <div class="ai-ok">No medication interaction flags detected.</div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro render_rag_sources(rag) -%}
+  {% set sources = rag.get("sources", []) if rag else [] %}
+  {% if sources %}
+    <div class="ai-list">
+      <strong style="color:#1f4e79">Guideline Sources</strong>
+      <ul>
+        {% for source in sources %}
+          <li>{{ source.get("citation", "") }} <span class="ai-score">score {{ source.get("score", "") }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro render_pubmed_papers(papers, error) -%}
+  {% if error and not papers %}
+    <div class="ai-flag">PubMed error: {{ error }}</div>
+  {% elif papers %}
+    <div class="ai-list">
+      <strong style="color:#1f4e79">PubMed Papers Retrieved</strong>
+      {% for paper in papers %}
+        <div class="pubmed-card">
+          <div class="pubmed-title">{{ paper.get("title", "No title") }}</div>
+          <div class="pubmed-meta">
+            {{ paper.get("journal", "") }} {{ paper.get("year", "") }}
+            {% if paper.get("url") %}
+              &mdash; <a href="{{ paper.get("url") }}" target="_blank">PMID {{ paper.get("pmid", "") }}</a>
+            {% else %}
+              &mdash; PMID {{ paper.get("pmid", "") }}
+            {% endif %}
+          </div>
+          <div class="pubmed-abstract">{{ paper.get("abstract", "") }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{%- endmacro %}
+
+{% if not pipeline %}
+  <p class="ai-missing">No AI report available for this submission.</p>
+{% else %}
+  {% set status = pipeline.get("status", "") %}
+  {% set stopped_after = pipeline.get("stopped_after", "") %}
+  {% set badge_color = "#2e7d32" if status == "completed" else "#b71c1c" %}
+  <div class="ai-status" style="background:{{ badge_color }}">Pipeline: {{ status|upper }} - stopped after: {{ stopped_after }}</div>
+
+  {% if pipeline.get("error") %}
+    <div class="ai-flag">{{ pipeline.get("error") }}</div>
+  {% else %}
+    {% set lifestyle = pipeline.get("lifestyle_agent", {}) %}
+    {% if lifestyle %}
+      {% set decision = lifestyle.get("decision", "") %}
+      {% set confidence = lifestyle.get("confidence", "") %}
+      {% set decision_color = "#2e7d32" if decision == "YES" else "#e65100" %}
+      <div class="ai-section">
+        <div class="ai-section-title">Lifestyle Triage</div>
+        <div class="ai-decision" style="border-left-color:{{ decision_color }}">
+          <strong>Decision:</strong> {{ decision }} &nbsp;|&nbsp;
+          <strong>Confidence:</strong> {{ confidence }}<br>
+          <em>{{ lifestyle.get("reasoning", "") }}</em>
+        </div>
+        {% for flag in lifestyle.get("flags", []) %}
+          <div class="ai-flag">{{ flag }}</div>
+        {% endfor %}
+        {{ render_list("Lifestyle Recommendations", lifestyle.get("lifestyle_recommendations", [])) }}
+      </div>
+    {% endif %}
+
+    {% if stopped_after != "lifestyle_agent" %}
+      {% set clinical = pipeline.get("clinical_agent", {}) %}
+      {% set ca_report = clinical.get("clinical_agent", {}).get("report", {}) if clinical else {} %}
+      {% set med_checks = clinical.get("medication_checks", {}) if clinical else {} %}
+      {% set rag = clinical.get("rag", {}) if clinical else {} %}
+
+      {% if ca_report %}
+        {% set confidence = ca_report.get("confidence", "") %}
+        {% set conf_color = {"high": "#2e7d32", "moderate": "#e65100", "low": "#b71c1c"}.get(confidence, "#555") %}
+        <div class="ai-section">
+          <div class="ai-section-title">Clinical Agent - CrewAI</div>
+          <div class="ai-summary-box">
+            <p>{{ ca_report.get("clinical_summary", "") }}</p>
+            <span class="ai-badge" style="background:{{ conf_color }}">Confidence: {{ confidence }}</span>
+          </div>
+          {{ render_flags(med_checks.get("label_flags", [])) }}
+          {{ render_list("Key Findings", ca_report.get("key_findings", [])) }}
+          {{ render_list("Medication Safety", ca_report.get("medication_safety", []), warn=True) }}
+          {{ render_list("Red Flags", ca_report.get("red_flags", []), danger=True) }}
+          {{ render_list("Guideline Context", ca_report.get("guideline_context", [])) }}
+          {{ render_list("Missing Information", ca_report.get("missing_information", [])) }}
+          {{ render_list("Recommended Follow-up Questions", ca_report.get("recommended_next_questions", [])) }}
+          {{ render_list("Medications Checked", med_checks.get("drug_candidates", [])) }}
+          {{ render_rag_sources(rag) }}
+          {{ render_list("Citations", ca_report.get("source_citations", [])) }}
+          {{ render_list("Limitations", ca_report.get("limitations", [])) }}
+        </div>
+      {% endif %}
+
+      {% set research = pipeline.get("research_agent", {}) %}
+      {% set ra_report = research.get("report", {}) if research else {} %}
+      {% if ra_report %}
+        <div class="ai-section">
+          <div class="ai-section-title">Research Agent - PubMed + CrewAI</div>
+          <div class="ai-summary-box">
+            <p>{{ ra_report.get("research_summary", "") }}</p>
+          </div>
+          {{ render_list("Evidence Points", ra_report.get("evidence_points", [])) }}
+          {{ render_list("Clinical Relevance", ra_report.get("clinical_relevance", [])) }}
+          {{ render_list("Conflicts or Uncertainties", ra_report.get("conflicts_or_uncertainties", [])) }}
+          {{ render_list("Suggested Clinician Review", ra_report.get("suggested_clinician_review", [])) }}
+          {{ render_pubmed_papers(research.get("pubmed_papers", []), research.get("pubmed_error")) }}
+          {{ render_list("Citations", ra_report.get("citations", [])) }}
+          {{ render_list("Limitations", ra_report.get("limitations", [])) }}
+        </div>
+      {% endif %}
+
+      {% set evidence_review = pipeline.get("evidence_reviewer_agent", {}) %}
+      {% set er_report = evidence_review.get("report", {}) if evidence_review else {} %}
+      {% if er_report %}
+        {% set quality = er_report.get("overall_evidence_quality") or "not stated" %}
+        {% set readiness = er_report.get("final_report_readiness") or "not stated" %}
+        <div class="ai-section">
+          <div class="ai-section-title">Evidence Reviewer Agent - CrewAI</div>
+          <div class="ai-summary-box">
+            <p>{{ er_report.get("reviewer_summary", "") }}</p>
+            <span class="ai-badge" style="background:#1f4e79">Quality: {{ quality }}</span>
+            <span class="ai-badge" style="background:#607d8b">Readiness: {{ readiness }}</span>
+          </div>
+          {{ render_list("High Confidence Claims", format_evidence_claims(er_report.get("high_confidence_claims", []))) }}
+          {{ render_list("Moderate Confidence Claims", format_evidence_claims(er_report.get("moderate_confidence_claims", [])), warn=True) }}
+          {{ render_list("Low Confidence or Unsupported Claims", format_evidence_claims(er_report.get("low_confidence_or_unsupported_claims", [])), danger=True) }}
+          {{ render_list("Citation Quality Issues", er_report.get("citation_quality_issues", []), warn=True) }}
+          {{ render_list("Missing Evidence", er_report.get("missing_evidence", []), warn=True) }}
+          {{ render_list("Overstatement Risks", er_report.get("overstatement_risks", []), warn=True) }}
+          {{ render_list("Evidence Conflicts", er_report.get("evidence_conflicts", []), warn=True) }}
+          {{ render_list("Clinician Review Priorities", er_report.get("clinician_review_priorities", [])) }}
+          {{ render_list("Limitations", er_report.get("limitations", [])) }}
+        </div>
+      {% endif %}
+
+      {% if final_report %}
+        {% set snapshot = final_report.get("patient_snapshot") or {} %}
+        <div class="ai-section">
+          <div class="ai-section-title">Final Report Agent - Structured Output</div>
+          <div class="ai-summary-box">
+            <p>{{ final_report.get("executive_summary", "") }}</p>
+            <span class="ai-badge" style="background:#1f4e79">Type: {{ final_report.get("report_type", "") }}</span>
+            <span class="ai-badge" style="background:#607d8b">Confidence: {{ final_report.get("confidence", "") }}</span>
+          </div>
+          {% if report_pdf.get("error") %}
+            <div class="ai-flag">PDF generation failed: {{ report_pdf.get("error") }}</div>
+          {% endif %}
+          {{ render_list("Clinical Summary", [final_report.get("clinical_summary", "")]) }}
+          {{ render_list("Findings", final_report.get("findings", [])) }}
+          {{ render_list("Citations", final_report.get("citations") or final_report.get("source_citations", [])) }}
+          <div class="ai-list">
+            <strong style="color:#1f4e79">Patient Snapshot</strong>
+            <ul>
+              <li>Submission ID: {{ snapshot.get("submission_id", "") }}</li>
+              <li>Age: {{ snapshot.get("age", "") }}</li>
+              <li>Sex: {{ snapshot.get("sex", "") }}</li>
+              <li>Question: {{ snapshot.get("presenting_question", "") }}</li>
+            </ul>
+          </div>
+          {{ render_list("Urgent Safety Alerts", final_report.get("urgent_safety_alerts", []), danger=True) }}
+          {{ render_list("Clinical Findings", final_report.get("clinical_findings", [])) }}
+          {{ render_list("Medication Safety", final_report.get("medication_safety", []), warn=True) }}
+          {{ render_list("Evidence Summary", final_report.get("evidence_summary", [])) }}
+          {{ render_list("Clinician Actions", final_report.get("clinician_actions", [])) }}
+          {{ render_list("Missing Information", final_report.get("missing_information", []), warn=True) }}
+          {{ render_list("Limitations", final_report.get("limitations", [])) }}
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+{% endif %}

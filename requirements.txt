@@ -12,11 +12,5 @@ python-bidi>=0.6.0
 # Image Processing (for later use)
 Pillow==11.3.0
 
-# OCR ( for later use)
+# OCR (optional local fallback)
 pytesseract==0.3.13
-
-pandas==2.3.1
-numpy==2.3.2
-
-# Production Server (for later use)
-gunicorn==23.0.0

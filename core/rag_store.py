@@ -11,13 +11,17 @@ import time
 from datetime import datetime
 from urllib.error import HTTPError, URLError
 
-from agent_utils import load_secret as read_secret, request_json
+from core.agent_utils import load_secret as read_secret, request_json
 
 
 # Purpose: configure local PDF sources, SQLite vector storage, and Gemini embeddings.
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-RAG_SOURCE_DIR = os.environ.get("RAG_SOURCE_DIR", os.path.join(BASE_DIR, "RAG Files"))
-RAG_DB_PATH = os.environ.get("RAG_DB_PATH", os.path.join(BASE_DIR, "rag_vectors.db"))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+IS_VERCEL = bool(os.environ.get("VERCEL"))
+RAG_SOURCE_DIR = os.environ.get("RAG_SOURCE_DIR", os.path.join(BASE_DIR, "data", "rag_files"))
+RAG_DB_PATH = os.environ.get(
+    "RAG_DB_PATH",
+    os.path.join("/tmp", "rag_vectors.db") if IS_VERCEL else os.path.join(BASE_DIR, "rag_vectors.db"),
+)
 GEMINI_EMBEDDING_MODEL = os.environ.get("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
 GEMINI_EMBEDDING_DIM = int(os.environ.get("GEMINI_EMBEDDING_DIM", "768"))
 CHUNK_MAX_CHARS = int(os.environ.get("RAG_CHUNK_MAX_CHARS", "2400"))

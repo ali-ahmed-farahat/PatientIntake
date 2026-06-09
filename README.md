@@ -235,6 +235,35 @@ POST /rag/context   Password-protected Clinical Agent context
 POST /clinical-agent Password-protected RAG plus medication-check agent
 ```
 
+## Deploying To Vercel
+
+The project includes a Vercel Python Function entry point at `api/index.py`.
+
+Before deploying, configure these environment variables in Vercel Project Settings:
+
+```text
+SUBMISSIONS_PASSWORD=use-a-strong-password
+GEMINI_API_KEY=your_gemini_key
+OPENAI_API_KEY=your_openai_key_optional
+OPENFDA_API_KEY=your_openfda_key_optional
+DRUGBANK_API_KEY=your_drugbank_key_optional
+```
+
+Vercel-specific behavior:
+
+- `vercel.json` routes all requests to the Flask app through `api/index.py`.
+- The Python function is configured with `maxDuration: 300` and `memory: 1024`.
+- Local-only folders and files are excluded from the serverless bundle, including `RAG Files/`, `uploads/`, local SQLite files, logs, and virtualenvs.
+- On Vercel, `DB_PATH`, `UPLOAD_DIR`, and `RAG_DB_PATH` default to `/tmp`.
+
+Important serverless constraint: Vercel's function filesystem is read-only except for `/tmp`, and `/tmp` is temporary. This means submitted forms, uploaded files, generated PDFs, and RAG indexes are not durable on Vercel unless you configure external storage.
+
+For production use, move persistent data to managed services:
+
+- Submissions: Vercel Postgres, Neon, Supabase, or another SQL database.
+- Uploads and PDFs: Vercel Blob, S3, Cloudinary, or another object store.
+- RAG vectors: a persistent database or vector store instead of the local SQLite file.
+
 ## Submitted Forms
 
 Submitted forms are stored in `intake.db`.

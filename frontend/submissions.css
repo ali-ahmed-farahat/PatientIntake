@@ -1,0 +1,59 @@
+*{box-sizing:border-box}
+body{margin:0;padding:30px;background:#f4f7fb;color:#172033;font-family:Arial,sans-serif}
+main{max-width:1100px;margin:auto}
+h1{margin:0 0 22px;color:#1f4e79}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+a{color:#1f4e79;font-weight:700;text-decoration:none}
+.ai-download-button{display:inline-block;margin:4px 0 10px;padding:10px 14px;border-radius:6px;background:#1f4e79;color:#fff;font-weight:700;text-decoration:none}
+.ai-download-button:hover{background:#163a5f}
+.submission,.empty{background:#fff;border-radius:8px}
+.submission{margin-bottom:28px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.09)}
+.submission h2{margin:0 0 14px;color:#1f4e79;font-size:20px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px;padding:12px;border-radius:6px;background:#f0f6ff}
+.submission-tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.submission-tab{display:inline-flex;align-items:center;min-height:38px;padding:8px 14px;border:1px solid #c9d7e6;border-radius:6px;background:#eef4fb;color:#1f4e79;font:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.submission-download{border-color:#1f4e79;background:#1f4e79;color:#fff;text-decoration:none}
+.submission-download:hover{background:#163a5f}
+.submission-tab-active{border-color:#1f4e79;background:#dcecff}
+.submission-tab-muted{color:#6b7280;background:#f5f7fa;cursor:not-allowed}
+.submission-panel[hidden]{display:none}
+.form-details{margin-bottom:20px;border:1px solid #d4dce7;border-radius:6px;overflow:hidden}
+.form-details summary{padding:10px 14px;background:#eef4fb;color:#1f4e79;font-weight:700;cursor:pointer}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{padding:9px;border:1px solid #d4dce7;text-align:left;vertical-align:top;word-break:break-word}
+th{width:260px;background:#eef4fb;color:#1f4e79}
+.ai-report{border:2px solid #1f4e79;border-radius:8px;overflow:hidden}
+.ai-report-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#1f4e79;color:#fff;font-weight:700;font-size:15px;letter-spacing:0;cursor:pointer;list-style:none}
+.ai-report-title::-webkit-details-marker{display:none}
+.ai-report-title::after{content:"+";width:22px;height:22px;border:1px solid rgba(255,255,255,.55);border-radius:4px;text-align:center;line-height:20px;font-size:18px}
+.ai-report[open] .ai-report-title::after{content:"-"}
+.ai-report-content{background:#fff}
+.ai-section{padding:16px;border-bottom:1px solid #d4dce7}
+.ai-section:last-child{border-bottom:0}
+.ai-section-title{margin-bottom:10px;color:#1f4e79;font-weight:700;font-size:15px}
+.ai-status{display:inline-block;margin-bottom:12px;padding:5px 12px;border-radius:4px;color:#fff;font-size:12px;font-weight:700}
+.ai-missing{padding:12px;color:#888;font-style:italic}
+.ai-summary-box,.ai-decision,.ai-flag,.ai-ok{margin-bottom:10px;padding:10px 14px;border-radius:0 6px 6px 0}
+.ai-summary-box{border-left:4px solid #1f4e79;background:#f7fbff}
+.ai-summary-box p{margin:0 0 8px;line-height:1.6}
+.ai-badge{display:inline-block;padding:3px 10px;border-radius:8px;color:#fff;font-size:12px;font-weight:700}
+.ai-decision{border-left:4px solid #e65100;background:#fffdf0;line-height:1.7}
+.ai-flag{border-left:4px solid #b71c1c;background:#fff3f3;color:#7f0000;font-size:14px}
+.ai-ok{border-left:4px solid #2e7d32;background:#f0fff4;color:#1b5e20;font-size:14px}
+.ai-list{margin-bottom:12px}
+.ai-list ul{margin:6px 0 0;padding-left:20px}
+.ai-list li{margin-bottom:4px;font-size:14px;line-height:1.55}
+.ai-score,.pubmed-meta{color:#666;font-size:12px}
+.pubmed-card{margin-top:8px;padding:10px 14px;border:1px solid #c9dff5;border-radius:6px;background:#f7fbff}
+.pubmed-title{margin-bottom:4px;font-weight:700;font-size:14px}
+.pubmed-abstract{color:#333;font-size:13px;line-height:1.55}
+.empty{padding:22px}
+@media(max-width:760px){
+  body{padding:12px}
+  h1{margin-bottom:0;font-size:22px}
+  .submission{padding:14px}
+  .summary{grid-template-columns:1fr}
+  table{display:block;overflow-x:auto;table-layout:auto}
+  th,td{min-width:160px;word-break:normal}
+  th{width:auto}
+}

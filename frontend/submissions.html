@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Submitted Forms</title>
+  <link rel="stylesheet" href="/submissions.css">
+</head>
+<body>
+  <main>
+    <div class="toolbar">
+      <h1>Submitted Forms</h1>
+      <a href="/">Back to form</a>
+    </div>
+    {% if not submissions %}
+      <p class="empty">No forms submitted yet.</p>
+    {% else %}
+      {% for submission in submissions %}
+        <article class="submission">
+          <h2>Submission #{{ submission.id }}</h2>
+          <div class="summary">
+            <span><strong>Name:</strong> {{ submission.full_name }}</span>
+            <span><strong>Age:</strong> {{ submission.age }}</span>
+            <span><strong>Mobile:</strong> {{ submission.mobile }}</span>
+            <span><strong>Email:</strong> {{ submission.email }}</span>
+          </div>
+
+          <div class="submission-tabs">
+            {% if submission.report_pdf_url %}
+              <a class="submission-tab submission-download" href="{{ submission.report_pdf_url }}" target="_blank" download>Download PDF Report</a>
+            {% elif submission.report_pdf_error %}
+              <span class="submission-tab submission-tab-muted">PDF unavailable</span>
+            {% else %}
+              <span class="submission-tab submission-tab-muted">Download PDF Report</span>
+            {% endif %}
+            <button class="submission-tab" type="button" data-panel-target="{{ submission.form_panel_id }}" aria-controls="{{ submission.form_panel_id }}" aria-expanded="false">Patient Form Answers</button>
+            <button class="submission-tab" type="button" data-panel-target="{{ submission.ai_panel_id }}" aria-controls="{{ submission.ai_panel_id }}" aria-expanded="false">AI Clinical Report</button>
+          </div>
+
+          <div id="{{ submission.form_panel_id }}" class="submission-panel form-details" hidden>
+            <table>
+              <tbody>
+                {% for answer in submission.answers %}
+                  <tr>
+                    <th>{{ answer.key }}</th>
+                    <td>
+                      {% if answer.value.type == "links" %}
+                        <ul>
+                          {% for link in answer.value.links %}
+                            {% if link.url %}
+                              <li><a href="{{ link.url }}">{{ link.name }}</a></li>
+                            {% else %}
+                              <li>{{ link.name }}</li>
+                            {% endif %}
+                          {% endfor %}
+                        </ul>
+                      {% else %}
+                        {{ answer.value.text }}
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div id="{{ submission.ai_panel_id }}" class="submission-panel ai-report" hidden>
+            <div class="ai-report-content">
+              {{ submission.ai_html|safe }}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    {% endif %}
+  </main>
+  <script src="/submissions.js"></script>
+</body>
+</html>
