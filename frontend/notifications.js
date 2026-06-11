@@ -1,37 +1,90 @@
-/* notifications.js — real-time SSE notifications for the doctor's submissions page */
+/* notifications.js - real-time SSE notifications for the doctor's submissions page */
 (function () {
   "use strict";
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  const I18N = {
+    en: {
+      notifications: "Notifications",
+      recentNotifications: "Recent notifications",
+      clearAll: "Clear all",
+      noNew: "No new submissions yet.",
+      connecting: "Connecting...",
+      live: "receiving updates",
+      reconnecting: "Reconnecting...",
+      error: "Connection lost - retrying",
+      newPatientSubmission: "New patient submission",
+      aiReportReady: "AI clinical report is ready",
+      view: "View",
+      dismiss: "Dismiss",
+      age: "Age",
+      urology: "Urology / مسالك",
+      consultation: "Consultation / استشارة",
+      examination: "Examination / كشف",
+    },
+    ar: {
+      notifications: "الإشعارات",
+      recentNotifications: "أحدث الإشعارات",
+      clearAll: "مسح الكل",
+      noNew: "لا توجد استمارات جديدة حتى الآن.",
+      connecting: "جارٍ الاتصال...",
+      live: "يتم استقبال التحديثات",
+      reconnecting: "جارٍ إعادة الاتصال...",
+      error: "انقطع الاتصال - تتم إعادة المحاولة",
+      newPatientSubmission: "استمارة مريض جديدة",
+      aiReportReady: "أصبح التقرير السريري بالذكاء الاصطناعي جاهزاً",
+      view: "عرض",
+      dismiss: "إغلاق",
+      age: "العمر",
+      urology: "مسالك",
+      consultation: "استشارة",
+      examination: "كشف",
+    }
+  };
+
   let unreadCount = 0;
   const originalTitle = document.title;
   let retryDelay = 2000;
   let es = null;
+  let connectionState = "connecting";
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   function escHtml(str) {
     return String(str ?? "")
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function currentLanguage() {
+    return document.documentElement.lang === "ar" ? "ar" : "en";
+  }
+
+  function t(key) {
+    const lang = currentLanguage();
+    return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key;
   }
 
   function visitLabel(type) {
-    return { urology: "Urology / مسالك", consultation: "Consultation / استشارة", examination: "Examination / كشف" }[type] || (type || "—");
+    return {
+      urology: t("urology"),
+      consultation: t("consultation"),
+      examination: t("examination"),
+    }[type] || (type || "-");
   }
 
-  // ── Build UI ──────────────────────────────────────────────────────────────
   function buildUI() {
     const toolbar = document.querySelector(".toolbar");
     if (!toolbar) {
-      console.warn("[notifications] .toolbar not found — bell cannot be injected");
+      console.warn("[notifications] .toolbar not found - bell cannot be injected");
       return false;
     }
 
-    // Bell button
+    const actionsHost = toolbar.querySelector(".toolbar-actions") || toolbar;
+
     const bell = document.createElement("button");
     bell.id = "notif-bell";
     bell.className = "notif-bell";
-    bell.setAttribute("aria-label", "Notifications");
+    bell.setAttribute("aria-label", t("notifications"));
     bell.setAttribute("aria-haspopup", "true");
     bell.setAttribute("aria-expanded", "false");
     bell.innerHTML = `
@@ -42,35 +95,32 @@
       </svg>
       <span id="notif-badge" class="notif-badge" hidden>0</span>
     `;
-    toolbar.appendChild(bell);
+    actionsHost.appendChild(bell);
 
-    // Dropdown panel
     const panel = document.createElement("div");
     panel.id = "notif-panel";
     panel.className = "notif-panel";
     panel.hidden = true;
     panel.setAttribute("role", "dialog");
-    panel.setAttribute("aria-label", "Recent notifications");
+    panel.setAttribute("aria-label", t("recentNotifications"));
     panel.innerHTML = `
       <div class="notif-panel-header">
-        <span>Notifications</span>
-        <button id="notif-clear" class="notif-clear-btn" type="button">Clear all</button>
+        <span id="notif-panel-title">${t("notifications")}</span>
+        <button id="notif-clear" class="notif-clear-btn" type="button">${t("clearAll")}</button>
       </div>
       <ul id="notif-list" class="notif-list">
-        <li class="notif-empty">No new submissions yet.</li>
+        <li class="notif-empty">${t("noNew")}</li>
       </ul>
-      <div id="notif-status" class="notif-conn-status notif-conn-connecting">Connecting…</div>
+      <div id="notif-status" class="notif-conn-status notif-conn-connecting">${t("connecting")}</div>
     `;
     document.body.appendChild(panel);
 
-    // Toast container
     const toasts = document.createElement("div");
     toasts.id = "notif-toasts";
     toasts.className = "notif-toasts";
     toasts.setAttribute("aria-live", "assertive");
     document.body.appendChild(toasts);
 
-    // Bell toggle
     bell.addEventListener("click", function (e) {
       e.stopPropagation();
       const open = !panel.hidden;
@@ -102,11 +152,13 @@
     return true;
   }
 
-  // ── Badge / title ─────────────────────────────────────────────────────────
   function incrementUnread() {
     unreadCount++;
     const badge = document.getElementById("notif-badge");
-    if (badge) { badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount); badge.hidden = false; }
+    if (badge) {
+      badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+      badge.hidden = false;
+    }
     document.title = "(" + unreadCount + ") " + originalTitle;
   }
 
@@ -117,10 +169,9 @@
     document.title = originalTitle;
   }
 
-  // ── Panel list ────────────────────────────────────────────────────────────
   function clearNotifList() {
     const list = document.getElementById("notif-list");
-    if (list) list.innerHTML = '<li class="notif-empty">No new submissions yet.</li>';
+    if (list) list.innerHTML = '<li class="notif-empty">' + escHtml(t("noNew")) + "</li>";
   }
 
   function prependToList(sub) {
@@ -134,27 +185,31 @@
     li.innerHTML = `
       <a href="#submission-${escHtml(String(sub.submission_id))}" class="notif-link">
         <span class="notif-name">${escHtml(sub.full_name)}</span>
-        <span class="notif-meta">${escHtml(visitLabel(sub.visit_type))}${sub.age ? " · Age " + escHtml(String(sub.age)) : ""} · #${escHtml(String(sub.submission_id))}</span>
+        <span class="notif-meta">${escHtml(visitLabel(sub.visit_type))}${sub.age ? " · " + escHtml(t("age")) + " " + escHtml(String(sub.age)) : ""} · #${escHtml(String(sub.submission_id))}</span>
       </a>
       <time class="notif-time">${escHtml(sub.timestamp)}</time>
     `;
     li.querySelector(".notif-link").addEventListener("click", function () {
-      const p = document.getElementById("notif-panel");
-      if (p) p.hidden = true;
+      const panel = document.getElementById("notif-panel");
+      if (panel) panel.hidden = true;
       const bell = document.getElementById("notif-bell");
       if (bell) bell.setAttribute("aria-expanded", "false");
     });
     list.prepend(li);
 
-    // Cap list at 50
     const items = list.querySelectorAll(".notif-item");
     if (items.length > 50) items[items.length - 1].remove();
   }
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
   function showToast(sub) {
     const container = document.getElementById("notif-toasts");
     if (!container) return;
+
+    const isPipelineCompleted = sub.type === "pipeline_completed";
+    const title = isPipelineCompleted ? t("aiReportReady") : t("newPatientSubmission");
+    const subtitle = isPipelineCompleted
+      ? "#" + escHtml(String(sub.submission_id)) + " · " + escHtml(String(sub.status || "completed"))
+      : escHtml(sub.full_name) + (sub.age ? " · " + escHtml(t("age")) + " " + escHtml(String(sub.age)) : "") + " · " + escHtml(visitLabel(sub.visit_type));
 
     const toast = document.createElement("div");
     toast.className = "notif-toast";
@@ -167,56 +222,87 @@
         </svg>
       </div>
       <div class="notif-toast-body">
-        <strong class="notif-toast-title">New patient submission</strong>
-        <span class="notif-toast-sub">${escHtml(sub.full_name)}${sub.age ? " · Age " + escHtml(String(sub.age)) : ""} · ${escHtml(visitLabel(sub.visit_type))}</span>
+        <strong class="notif-toast-title">${title}</strong>
+        <span class="notif-toast-sub">${subtitle}</span>
       </div>
-      <a href="#submission-${escHtml(String(sub.submission_id))}" class="notif-toast-action">View</a>
-      <button class="notif-toast-close" aria-label="Dismiss" type="button">×</button>
+      <a href="#submission-${escHtml(String(sub.submission_id))}" class="notif-toast-action">${escHtml(t("view"))}</a>
+      <button class="notif-toast-close" aria-label="${escHtml(t("dismiss"))}" type="button">×</button>
     `;
 
-    toast.querySelector(".notif-toast-close").addEventListener("click", function () { dismissToast(toast); });
-    toast.querySelector(".notif-toast-action").addEventListener("click", function () { dismissToast(toast); });
+    toast.querySelector(".notif-toast-close").addEventListener("click", function () {
+      dismissToast(toast);
+    });
+    toast.querySelector(".notif-toast-action").addEventListener("click", function () {
+      dismissToast(toast);
+    });
     container.appendChild(toast);
 
-    // Trigger enter animation
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () { toast.classList.add("notif-toast-visible"); });
+      requestAnimationFrame(function () {
+        toast.classList.add("notif-toast-visible");
+      });
     });
 
-    const timer = setTimeout(function () { dismissToast(toast); }, 7000);
+    const timer = setTimeout(function () {
+      dismissToast(toast);
+    }, 7000);
     toast._dismissTimer = timer;
   }
 
   function dismissToast(toast) {
     clearTimeout(toast._dismissTimer);
     toast.classList.remove("notif-toast-visible");
-    setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+    setTimeout(function () {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 400);
   }
 
-  // ── Highlight new card ────────────────────────────────────────────────────
   function highlightNewSubmission(id) {
     const card = document.getElementById("submission-" + id);
     if (card) {
       card.classList.add("submission-new");
       card.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      setTimeout(function () { card.classList.remove("submission-new"); }, 6000);
+      setTimeout(function () {
+        card.classList.remove("submission-new");
+      }, 6000);
     } else {
-      // Card not in DOM yet (page may not have reloaded) — scroll to top
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
 
-  // ── Connection status ─────────────────────────────────────────────────────
   function setConnStatus(state) {
+    connectionState = state;
     const el = document.getElementById("notif-status");
     if (!el) return;
     el.className = "notif-conn-status notif-conn-" + state;
-    el.textContent = { connecting: "Connecting…", live: "receiving updates", reconnecting: "Reconnecting…", error: "Connection lost — retrying" }[state] || state;
+    el.textContent = {
+      connecting: t("connecting"),
+      live: t("live"),
+      reconnecting: t("reconnecting"),
+      error: t("error"),
+    }[state] || state;
   }
 
-  // ── SSE ───────────────────────────────────────────────────────────────────
+  function refreshLanguage() {
+    const bell = document.getElementById("notif-bell");
+    const panel = document.getElementById("notif-panel");
+    const panelTitle = document.getElementById("notif-panel-title");
+    const clearButton = document.getElementById("notif-clear");
+    const empty = document.querySelector(".notif-empty");
+
+    if (bell) bell.setAttribute("aria-label", t("notifications"));
+    if (panel) panel.setAttribute("aria-label", t("recentNotifications"));
+    if (panelTitle) panelTitle.textContent = t("notifications");
+    if (clearButton) clearButton.textContent = t("clearAll");
+    if (empty) empty.textContent = t("noNew");
+    setConnStatus(connectionState);
+  }
+
   function connect() {
-    if (es) { es.close(); es = null; }
+    if (es) {
+      es.close();
+      es = null;
+    }
 
     if (!window.EventSource) {
       console.warn("[notifications] EventSource not supported in this browser.");
@@ -224,12 +310,12 @@
       return;
     }
 
-    console.log("[notifications] Connecting to /events …");
+    console.log("[notifications] Connecting to /events ...");
     setConnStatus("connecting");
     es = new EventSource("/events");
 
     es.addEventListener("connected", function () {
-      console.log("[notifications] SSE connected ✓");
+      console.log("[notifications] SSE connected");
       retryDelay = 2000;
       setConnStatus("live");
     });
@@ -237,26 +323,43 @@
     es.addEventListener("new_submission", function (event) {
       console.log("[notifications] new_submission received:", event.data);
       let sub;
-      try { sub = JSON.parse(event.data); } catch (err) { console.error("[notifications] JSON parse error:", err); return; }
+      try {
+        sub = JSON.parse(event.data);
+      } catch (err) {
+        console.error("[notifications] JSON parse error:", err);
+        return;
+      }
       incrementUnread();
-      prependToList(sub);
+      if (sub.type !== "pipeline_completed") {
+        prependToList(sub);
+      }
       showToast(sub);
       highlightNewSubmission(sub.submission_id);
+      if (sub.type === "pipeline_completed" && window.location.pathname === "/submissions") {
+        setTimeout(function () {
+          window.location.reload();
+        }, 1200);
+      }
     });
 
     es.addEventListener("error", function (err) {
       console.warn("[notifications] SSE error, will retry in", retryDelay, "ms", err);
-      es.close(); es = null;
+      es.close();
+      es = null;
       setConnStatus("reconnecting");
-      setTimeout(function () { connect(); }, retryDelay);
+      setTimeout(function () {
+        connect();
+      }, retryDelay);
       retryDelay = Math.min(retryDelay * 1.5, 30000);
     });
   }
 
-  // ── Boot ──────────────────────────────────────────────────────────────────
   function init() {
     const uiReady = buildUI();
-    if (uiReady) connect();
+    if (uiReady) {
+      refreshLanguage();
+      connect();
+    }
   }
 
   if (document.readyState === "loading") {
@@ -264,4 +367,6 @@
   } else {
     init();
   }
+
+  document.addEventListener("submissions-language-change", refreshLanguage);
 })();

@@ -59,54 +59,6 @@ def compact_openfda_results(openfda_results):
     ]
 
 
-def _build_rag_tool(api_key):
-    """Create a CrewAI RAG tool backed by the shared Chroma index."""
-    from core.rag_store import RAG_CHROMA_DIR, RAG_COLLECTION_NAME, RAG_SOURCE_DIR
-
-    rag_config = {
-        "vectordb": {
-            "provider": "chromadb",
-            "config": {
-                "collection_name": RAG_COLLECTION_NAME,
-                "dir": RAG_CHROMA_DIR,
-            },
-        },
-        "embedding_model": {
-            "provider": "google-generativeai",
-            "config": {
-                "model": "models/embedding-001",
-                "api_key": api_key,
-            },
-        },
-    }
-
-    try:
-        from crewai_tools import RagTool
-
-        rag_tool = RagTool(config=rag_config)
-        add_method = getattr(rag_tool, "add", None)
-        if callable(add_method):
-            try:
-                add_method(data_type="directory", path=RAG_SOURCE_DIR)
-            except TypeError:
-                add_method(path=RAG_SOURCE_DIR)
-        return rag_tool
-    except Exception as exc:
-        print(f"Warning: CrewAI RagTool initialization failed: {exc}")
-
-    try:
-        from crewai_tools import DirectorySearchTool
-
-        return DirectorySearchTool(
-            directory=RAG_SOURCE_DIR,
-            collection_name=RAG_COLLECTION_NAME,
-            config=rag_config,
-        )
-    except Exception as fallback_exc:
-        print(f"Warning: CrewAI DirectorySearchTool initialization failed: {fallback_exc}")
-        return None
-
-
 # Purpose: combine patient context, local RAG passages, and medication checks.
 def build_evidence_packet(inputs, rag_context, medication_checks):
     return {
@@ -127,18 +79,14 @@ def build_evidence_packet(inputs, rag_context, medication_checks):
 
 def call_gemini_clinical_agent(evidence_packet, *, api_key, model_name, timeout=45):
     """Run the CrewAI clinical review agent and parse the JSON memo."""
-    tools = []
-    rag_tool = _build_rag_tool(api_key)
-    if rag_tool is not None:
-        tools.append(rag_tool)
-
     return run_crewai_json_agent(
         role="Clinical Evidence Review Agent",
-        goal="Produce a clinician-facing structured memo using the evidence packet and retrieved local documents.",
+        goal="Produce a clinician-facing structured memo using the supplied evidence packet and retrieved guideline passages.",
         backstory=CLINICAL_AGENT_SYSTEM_PROMPT,
         task_prompt=(
-            "You MUST query the local clinical guideline documents using your DirectorySearchTool to search for guidelines and reference information concerning the patient's chief complaint, medical history, and medications. "
-            "Integrate these guideline findings and citations directly into the JSON clinical research memo along with the details from the evidence packet.\n\n"
+            "Use the guideline passages and citations already included in the evidence packet. "
+            "Do not repeat retrieval work unless the packet is missing evidence. "
+            "Integrate the supplied RAG context, medication checks, and safety flags directly into the JSON clinical memo.\n\n"
             f"{json.dumps(evidence_packet, ensure_ascii=False, indent=2)}"
         ),
         expected_output="A valid JSON object matching the requested clinical memo response format.",
@@ -147,7 +95,6 @@ def call_gemini_clinical_agent(evidence_packet, *, api_key, model_name, timeout=
         max_tokens=8192,
         timeout=timeout,
         label="CrewAI clinical agent",
-        tools=tools if tools else None,
     )
 
 

@@ -145,7 +145,7 @@ def run_full_clinical_pipeline(
         clinical_result,
         api_key=gemini_api_key,
         model_name=gemini_research_model,
-        max_pubmed_results=5,
+        max_pubmed_results=3,
     )
     pipeline["research_agent"] = research_result
 

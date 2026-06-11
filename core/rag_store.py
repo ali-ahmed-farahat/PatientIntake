@@ -522,8 +522,10 @@ def search_rag(query, *, top_k=6, min_score=None):
         query_embeddings=[query_embedding],
         n_results=int(top_k),
         where={
-            "embedding_model": embedding_model,
-            "embedding_dim": int(embedding_dim),
+            "$and": [
+                {"embedding_model": embedding_model},
+                {"embedding_dim": int(embedding_dim)},
+            ]
         },
         include=["documents", "metadatas", "distances"],
     )

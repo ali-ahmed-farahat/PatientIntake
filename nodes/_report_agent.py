@@ -107,6 +107,44 @@ def _compact_json(value, max_chars=9000):
     return compact_text(text, max_chars)
 
 
+def _compact_pubmed_papers(papers, limit=3):
+    """Keep only the most useful PubMed fields for the final report agent."""
+    compacted = []
+    for paper in (papers or [])[:limit]:
+        compacted.append({
+            "pmid": paper.get("pmid"),
+            "title": paper.get("title"),
+            "journal": paper.get("journal"),
+            "year": paper.get("year"),
+            "citation": paper.get("citation"),
+            "abstract": compact_text(paper.get("abstract"), 700),
+        })
+    return compacted
+
+
+def _compact_medication_checks(medication_checks):
+    """Reduce medication-check payload size while preserving clinician-useful details."""
+    medication_checks = medication_checks or {}
+    openfda_rows = []
+    for item in (medication_checks.get("openfda") or [])[:3]:
+        label = item.get("label") or {}
+        openfda_rows.append({
+            "query": item.get("query"),
+            "found": item.get("found"),
+            "message": item.get("message") or item.get("error"),
+            "contraindications": compact_text(label.get("contraindications"), 500),
+            "drug_interactions": compact_text(label.get("drug_interactions"), 500),
+            "warnings": compact_text(label.get("warnings"), 500),
+        })
+
+    return {
+        "drug_candidates": (medication_checks.get("drug_candidates") or [])[:6],
+        "label_flags": (medication_checks.get("label_flags") or [])[:6],
+        "openfda": openfda_rows,
+        "drugbank": _compact_json(medication_checks.get("drugbank") or {}, 1800),
+    }
+
+
 def build_report_packet(pipeline_result):
     """Extract the pipeline fields that the final report agent needs."""
     pipeline_result = pipeline_result or {}
@@ -123,14 +161,14 @@ def build_report_packet(pipeline_result):
         "clinical_agent": {
             "input": clinical.get("input", {}),
             "clinical_report": (clinical.get("clinical_agent") or {}).get("report", {}),
-            "medication_checks": clinical.get("medication_checks", {}),
+            "medication_checks": _compact_medication_checks(clinical.get("medication_checks", {})),
             "rag_sources": (clinical.get("rag") or {}).get("sources", []),
             "notes": clinical.get("notes", []),
         },
         "research_agent": {
             "pubmed_query": research.get("pubmed_query"),
             "pubmed_error": research.get("pubmed_error"),
-            "pubmed_papers": research.get("pubmed_papers", []),
+            "pubmed_papers": _compact_pubmed_papers(research.get("pubmed_papers", [])),
             "report": research.get("report", {}),
         },
         "evidence_reviewer_agent": {

@@ -631,6 +631,111 @@ def render_ai_report(pipeline):
         format_evidence_claims=format_evidence_claims,
     )
 
+def build_ai_summary_points(pipeline, limit=12):
+    """Build a concise bullet-point summary from the AI pipeline outputs."""
+    if not pipeline:
+        return []
+
+    points = []
+    seen = set()
+
+    def add_point(text):
+        text = str(text or "").strip()
+        if not text:
+            return
+        key = text.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        points.append(text)
+
+    def add_list(prefix, values, max_items=2):
+        count = 0
+        for value in values or []:
+            text = str(value or "").strip()
+            if not text:
+                continue
+            add_point(f"{prefix}: {text}" if prefix else text)
+            count += 1
+            if count >= max_items or len(points) >= limit:
+                break
+
+    status = str(pipeline.get("status") or "").strip()
+    stopped_after = str(pipeline.get("stopped_after") or "").strip()
+    if status:
+        add_point(f"Pipeline status: {status}" + (f" (stopped after {stopped_after})" if stopped_after else ""))
+
+    if pipeline.get("error"):
+        add_point(f"Pipeline error: {pipeline.get('error')}")
+
+    lifestyle = pipeline.get("lifestyle_agent") or {}
+    if lifestyle:
+        decision = str(lifestyle.get("decision") or "").strip()
+        confidence = str(lifestyle.get("confidence") or "").strip()
+        reasoning = str(lifestyle.get("reasoning") or "").strip()
+        if decision or confidence:
+            label = "Lifestyle triage"
+            suffix = f": {decision}" if decision else ""
+            if confidence:
+                suffix += f" ({confidence} confidence)" if suffix else f": {confidence} confidence"
+            add_point(label + suffix)
+        if reasoning:
+            add_point(f"Lifestyle note: {reasoning}")
+        add_list("Lifestyle recommendation", lifestyle.get("lifestyle_recommendations", []), max_items=2)
+        add_list("Lifestyle flag", lifestyle.get("flags", []), max_items=2)
+
+    clinical = pipeline.get("clinical_agent") or {}
+    clinical_report = (clinical.get("clinical_agent") or {}).get("report") or {}
+    if clinical_report:
+        add_point(clinical_report.get("clinical_summary"))
+        add_list("Clinical finding", clinical_report.get("key_findings", []), max_items=2)
+        add_list("Medication safety", clinical_report.get("medication_safety", []), max_items=2)
+        add_list("Red flag", clinical_report.get("red_flags", []), max_items=2)
+
+    research = pipeline.get("research_agent") or {}
+    research_report = research.get("report") or {}
+    if research_report:
+        add_point(research_report.get("research_summary"))
+        if research.get("pubmed_papers"):
+            add_point(f"PubMed papers retrieved: {len(research.get('pubmed_papers') or [])}")
+        if research.get("pubmed_error"):
+            add_point(f"PubMed error: {research.get('pubmed_error')}")
+        add_list("Evidence point", research_report.get("evidence_points", []), max_items=2)
+        add_list("Clinical relevance", research_report.get("clinical_relevance", []), max_items=1)
+
+    evidence = pipeline.get("evidence_reviewer_agent") or {}
+    evidence_report = evidence.get("report") or {}
+    if evidence_report:
+        quality = str(evidence_report.get("overall_evidence_quality") or "").strip()
+        readiness = str(evidence_report.get("final_report_readiness") or "").strip()
+        if quality or readiness:
+            add_point(
+                "Evidence review"
+                + (f": quality {quality}" if quality else "")
+                + (f", readiness {readiness}" if readiness else "")
+            )
+        add_point(evidence_report.get("reviewer_summary"))
+        add_list("Reviewer priority", evidence_report.get("clinician_review_priorities", []), max_items=2)
+        add_list("Citation issue", evidence_report.get("citation_quality_issues", []), max_items=1)
+
+    report_agent = pipeline.get("report_agent") or {}
+    final_report = report_agent.get("report") or pipeline.get("final_report") or {}
+    if final_report:
+        add_point(final_report.get("executive_summary"))
+        report_type = str(final_report.get("report_type") or "").strip()
+        confidence = str(final_report.get("confidence") or "").strip()
+        if report_type or confidence:
+            add_point(
+                "Final report"
+                + (f": {report_type}" if report_type else "")
+                + (f" ({confidence} confidence)" if confidence else "")
+            )
+        add_list("Urgent alert", final_report.get("urgent_safety_alerts", []), max_items=2)
+        add_list("Clinician action", final_report.get("clinician_actions", []), max_items=2)
+        add_list("Missing information", final_report.get("missing_information", []), max_items=1)
+
+    return points[:limit]
+
 def format_evidence_claims(items):
     """Convert evidence reviewer claim dictionaries into readable list rows."""
     rows = []

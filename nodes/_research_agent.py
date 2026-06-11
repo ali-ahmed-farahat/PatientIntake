@@ -1,16 +1,20 @@
 import json
+import os
 from xml.etree import ElementTree as ET
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
-from core.agent_utils import compact_text
+from core.agent_utils import compact_text, load_secret as read_secret
 from tools.crewai_agent_tools import run_crewai_json_agent
 
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GEMINI_RESEARCH_MODEL = "gemini-2.5-flash"
 PUBMED_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 PUBMED_FETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+PUBMED_TOOL = os.environ.get("PUBMED_TOOL", "PatientIntake")
+PUBMED_EMAIL = os.environ.get("PUBMED_EMAIL", "")
 
 
 # Purpose: tell Gemini how to synthesize RAG, drug-label, and PubMed evidence.
@@ -50,6 +54,28 @@ Rules:
 """.strip()
 
 
+def load_pubmed_api_key():
+    """Read the PubMed API key from env vars or the local APIkey file."""
+    return read_secret(
+        "PUBMED_API_KEY",
+        base_dir=BASE_DIR,
+        aliases={"PUBMED_API_KEY", "NCBI_API_KEY", "PUBMED", "NCBI"},
+    )
+
+
+def pubmed_request_params(**params):
+    """Attach optional PubMed identity fields and API key to one eutils request."""
+    merged = dict(params)
+    api_key = load_pubmed_api_key()
+    if api_key:
+        merged["api_key"] = api_key
+    if PUBMED_TOOL:
+        merged["tool"] = PUBMED_TOOL
+    if PUBMED_EMAIL:
+        merged["email"] = PUBMED_EMAIL
+    return merged
+
+
 # Purpose: turn the clinical packet into a compact PubMed search query.
 def build_pubmed_query(clinical_packet):
     inputs = clinical_packet.get("input", {})
@@ -66,13 +92,13 @@ def build_pubmed_query(clinical_packet):
 
 # Purpose: retrieve IDs, then abstracts, from PubMed eutils.
 def fetch_pubmed_papers(query, *, max_results=5, timeout=20):
-    search_params = {
-        "db": "pubmed",
-        "term": query,
-        "retmode": "json",
-        "retmax": str(max_results),
-        "sort": "relevance",
-    }
+    search_params = pubmed_request_params(
+        db="pubmed",
+        term=query,
+        retmode="json",
+        retmax=str(max_results),
+        sort="relevance",
+    )
     search_url = PUBMED_SEARCH_URL + "?" + urlencode(search_params)
     with urlopen(search_url, timeout=timeout) as response:
         search_payload = json.loads(response.read().decode("utf-8"))
@@ -81,12 +107,12 @@ def fetch_pubmed_papers(query, *, max_results=5, timeout=20):
     if not pmids:
         return []
 
-    fetch_params = {
-        "db": "pubmed",
-        "id": ",".join(pmids),
-        "retmode": "xml",
-        "rettype": "abstract",
-    }
+    fetch_params = pubmed_request_params(
+        db="pubmed",
+        id=",".join(pmids),
+        retmode="xml",
+        rettype="abstract",
+    )
     fetch_url = PUBMED_FETCH_URL + "?" + urlencode(fetch_params)
     with urlopen(fetch_url, timeout=timeout) as response:
         xml_text = response.read().decode("utf-8", "replace")
@@ -181,6 +207,7 @@ def run_research_agent(clinical_packet, *, api_key, model_name=GEMINI_RESEARCH_M
         "engine": "crewai",
         "model": model_name,
         "pubmed_query": query,
+        "pubmed_api_key_configured": bool(load_pubmed_api_key()),
         "research_packet": research_packet,
         "pubmed_papers": papers,
         "pubmed_error": pubmed_error,

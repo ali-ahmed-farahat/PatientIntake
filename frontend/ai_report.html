@@ -2,7 +2,36 @@
   {% if items %}
     {% set color = "#b71c1c" if danger else ("#e65100" if warn else "#1f4e79") %}
     <div class="ai-list">
-      <strong style="color:{{ color }}">{{ title }}</strong>
+      <strong style="color:{{ color }}" data-i18n-en="{{ title }}" data-i18n-ar="{{ {
+        'Lifestyle Recommendations': 'توصيات نمط الحياة',
+        'Key Findings': 'النتائج الأساسية',
+        'Medication Safety': 'سلامة الأدوية',
+        'Red Flags': 'العلامات التحذيرية',
+        'Guideline Context': 'سياق الإرشادات',
+        'Missing Information': 'المعلومات الناقصة',
+        'Recommended Follow-up Questions': 'أسئلة المتابعة المقترحة',
+        'Medications Checked': 'الأدوية التي تم فحصها',
+        'Citations': 'الاستشهادات',
+        'Limitations': 'القيود',
+        'Evidence Points': 'نقاط الأدلة',
+        'Clinical Relevance': 'الأهمية السريرية',
+        'Conflicts or Uncertainties': 'التعارضات أو جوانب عدم اليقين',
+        'Suggested Clinician Review': 'المراجعة المقترحة للطبيب',
+        'High Confidence Claims': 'الادعاءات عالية الثقة',
+        'Moderate Confidence Claims': 'الادعاءات متوسطة الثقة',
+        'Low Confidence or Unsupported Claims': 'الادعاءات منخفضة الثقة أو غير المدعومة',
+        'Citation Quality Issues': 'مشكلات جودة الاستشهادات',
+        'Missing Evidence': 'الأدلة الناقصة',
+        'Overstatement Risks': 'مخاطر المبالغة',
+        'Evidence Conflicts': 'تعارضات الأدلة',
+        'Clinician Review Priorities': 'أولويات مراجعة الطبيب',
+        'Clinical Summary': 'الملخص السريري',
+        'Findings': 'النتائج',
+        'Urgent Safety Alerts': 'تنبيهات السلامة العاجلة',
+        'Clinical Findings': 'النتائج السريرية',
+        'Evidence Summary': 'ملخص الأدلة',
+        'Clinician Actions': 'إجراءات الطبيب'
+      }.get(title, title) }}">{{ title }}</strong>
       <ul>
         {% for item in items %}
           <li>{{ item }}</li>
@@ -18,7 +47,7 @@
       <div class="ai-flag"><strong>{{ flag.get("drug", "") }}</strong>: {{ flag.get("message", "") }}</div>
     {% endfor %}
   {% else %}
-    <div class="ai-ok">No medication interaction flags detected.</div>
+    <div class="ai-ok" data-i18n-en="No medication interaction flags detected." data-i18n-ar="لم يتم رصد علامات لتداخلات دوائية.">No medication interaction flags detected.</div>
   {% endif %}
 {%- endmacro %}
 
@@ -26,10 +55,10 @@
   {% set sources = rag.get("sources", []) if rag else [] %}
   {% if sources %}
     <div class="ai-list">
-      <strong style="color:#1f4e79">Guideline Sources</strong>
+      <strong style="color:#1f4e79" data-i18n-en="Guideline Sources" data-i18n-ar="مصادر الإرشادات">Guideline Sources</strong>
       <ul>
         {% for source in sources %}
-          <li>{{ source.get("citation", "") }} <span class="ai-score">score {{ source.get("score", "") }}</span></li>
+          <li>{{ source.get("citation", "") }} <span class="ai-score"><span data-i18n-en="score" data-i18n-ar="الدرجة">score</span> {{ source.get("score", "") }}</span></li>
         {% endfor %}
       </ul>
     </div>
@@ -38,10 +67,10 @@
 
 {% macro render_pubmed_papers(papers, error) -%}
   {% if error and not papers %}
-    <div class="ai-flag">PubMed error: {{ error }}</div>
+    <div class="ai-flag"><span data-i18n-en="PubMed error:" data-i18n-ar="خطأ PubMed:">PubMed error:</span> {{ error }}</div>
   {% elif papers %}
     <div class="ai-list">
-      <strong style="color:#1f4e79">PubMed Papers Retrieved</strong>
+      <strong style="color:#1f4e79" data-i18n-en="PubMed Papers Retrieved" data-i18n-ar="الأبحاث المسترجعة من PubMed">PubMed Papers Retrieved</strong>
       {% for paper in papers %}
         <div class="pubmed-card">
           <div class="pubmed-title">{{ paper.get("title", "No title") }}</div>
@@ -61,12 +90,18 @@
 {%- endmacro %}
 
 {% if not pipeline %}
-  <p class="ai-missing">No AI report available for this submission.</p>
+  <p class="ai-missing" data-i18n-en="No AI report available for this submission." data-i18n-ar="لا يوجد تقرير ذكاء اصطناعي لهذه الاستمارة.">No AI report available for this submission.</p>
 {% else %}
   {% set status = pipeline.get("status", "") %}
   {% set stopped_after = pipeline.get("stopped_after", "") %}
   {% set badge_color = "#2e7d32" if status == "completed" else "#b71c1c" %}
-  <div class="ai-status" style="background:{{ badge_color }}">Pipeline: {{ status|upper }} - stopped after: {{ stopped_after }}</div>
+  <div class="ai-status" style="background:{{ badge_color }}">
+    <span data-i18n-en="Pipeline:" data-i18n-ar="المسار:">Pipeline:</span>
+    {{ status|upper }}
+    -
+    <span data-i18n-en="stopped after:" data-i18n-ar="توقف بعد:">stopped after:</span>
+    {{ stopped_after }}
+  </div>
 
   {% if pipeline.get("error") %}
     <div class="ai-flag">{{ pipeline.get("error") }}</div>
@@ -77,10 +112,10 @@
       {% set confidence = lifestyle.get("confidence", "") %}
       {% set decision_color = "#2e7d32" if decision == "YES" else "#e65100" %}
       <div class="ai-section">
-        <div class="ai-section-title">Lifestyle Triage</div>
+        <div class="ai-section-title" data-i18n-en="Lifestyle Triage" data-i18n-ar="فرز نمط الحياة">Lifestyle Triage</div>
         <div class="ai-decision" style="border-left-color:{{ decision_color }}">
-          <strong>Decision:</strong> {{ decision }} &nbsp;|&nbsp;
-          <strong>Confidence:</strong> {{ confidence }}<br>
+          <strong data-i18n-en="Decision:" data-i18n-ar="القرار:">Decision:</strong> {{ decision }} &nbsp;|&nbsp;
+          <strong data-i18n-en="Confidence:" data-i18n-ar="الثقة:">Confidence:</strong> {{ confidence }}<br>
           <em>{{ lifestyle.get("reasoning", "") }}</em>
         </div>
         {% for flag in lifestyle.get("flags", []) %}
@@ -100,10 +135,10 @@
         {% set confidence = ca_report.get("confidence", "") %}
         {% set conf_color = {"high": "#2e7d32", "moderate": "#e65100", "low": "#b71c1c"}.get(confidence, "#555") %}
         <div class="ai-section">
-          <div class="ai-section-title">Clinical Agent - CrewAI</div>
+          <div class="ai-section-title" data-i18n-en="Clinical Agent - CrewAI" data-i18n-ar="الوكيل السريري - CrewAI">Clinical Agent - CrewAI</div>
           <div class="ai-summary-box">
             <p>{{ ca_report.get("clinical_summary", "") }}</p>
-            <span class="ai-badge" style="background:{{ conf_color }}">Confidence: {{ confidence }}</span>
+            <span class="ai-badge" style="background:{{ conf_color }}"><span data-i18n-en="Confidence:" data-i18n-ar="الثقة:">Confidence:</span> {{ confidence }}</span>
           </div>
           {{ render_flags(med_checks.get("label_flags", [])) }}
           {{ render_list("Key Findings", ca_report.get("key_findings", [])) }}
@@ -123,7 +158,7 @@
       {% set ra_report = research.get("report", {}) if research else {} %}
       {% if ra_report %}
         <div class="ai-section">
-          <div class="ai-section-title">Research Agent - PubMed + CrewAI</div>
+          <div class="ai-section-title" data-i18n-en="Researched Information (PubMed)" data-i18n-ar="المعلومات البحثية (PubMed)">Researched Information (PubMed)</div>
           <div class="ai-summary-box">
             <p>{{ ra_report.get("research_summary", "") }}</p>
           </div>
@@ -143,11 +178,11 @@
         {% set quality = er_report.get("overall_evidence_quality") or "not stated" %}
         {% set readiness = er_report.get("final_report_readiness") or "not stated" %}
         <div class="ai-section">
-          <div class="ai-section-title">Evidence Reviewer Agent - CrewAI</div>
+          <div class="ai-section-title" data-i18n-en="Evidence Related" data-i18n-ar="متعلق بالأدلة">Evidence Related</div>
           <div class="ai-summary-box">
             <p>{{ er_report.get("reviewer_summary", "") }}</p>
-            <span class="ai-badge" style="background:#1f4e79">Quality: {{ quality }}</span>
-            <span class="ai-badge" style="background:#607d8b">Readiness: {{ readiness }}</span>
+            <span class="ai-badge" style="background:#1f4e79"><span data-i18n-en="Quality:" data-i18n-ar="الجودة:">Quality:</span> {{ quality }}</span>
+            <span class="ai-badge" style="background:#607d8b"><span data-i18n-en="Readiness:" data-i18n-ar="الجاهزية:">Readiness:</span> {{ readiness }}</span>
           </div>
           {{ render_list("High Confidence Claims", format_evidence_claims(er_report.get("high_confidence_claims", []))) }}
           {{ render_list("Moderate Confidence Claims", format_evidence_claims(er_report.get("moderate_confidence_claims", [])), warn=True) }}
@@ -164,25 +199,25 @@
       {% if final_report %}
         {% set snapshot = final_report.get("patient_snapshot") or {} %}
         <div class="ai-section">
-          <div class="ai-section-title">Final Report Agent - Structured Output</div>
+          <div class="ai-section-title" data-i18n-en="Final Report" data-i18n-ar="التقرير النهائي">Final Report</div>
           <div class="ai-summary-box">
             <p>{{ final_report.get("executive_summary", "") }}</p>
-            <span class="ai-badge" style="background:#1f4e79">Type: {{ final_report.get("report_type", "") }}</span>
-            <span class="ai-badge" style="background:#607d8b">Confidence: {{ final_report.get("confidence", "") }}</span>
+            <span class="ai-badge" style="background:#1f4e79"><span data-i18n-en="Type:" data-i18n-ar="النوع:">Type:</span> {{ final_report.get("report_type", "") }}</span>
+            <span class="ai-badge" style="background:#607d8b"><span data-i18n-en="Confidence:" data-i18n-ar="الثقة:">Confidence:</span> {{ final_report.get("confidence", "") }}</span>
           </div>
           {% if report_pdf.get("error") %}
-            <div class="ai-flag">PDF generation failed: {{ report_pdf.get("error") }}</div>
+            <div class="ai-flag"><span data-i18n-en="PDF generation failed:" data-i18n-ar="فشل إنشاء ملف PDF:">PDF generation failed:</span> {{ report_pdf.get("error") }}</div>
           {% endif %}
           {{ render_list("Clinical Summary", [final_report.get("clinical_summary", "")]) }}
           {{ render_list("Findings", final_report.get("findings", [])) }}
           {{ render_list("Citations", final_report.get("citations") or final_report.get("source_citations", [])) }}
           <div class="ai-list">
-            <strong style="color:#1f4e79">Patient Snapshot</strong>
+            <strong style="color:#1f4e79" data-i18n-en="Patient Snapshot" data-i18n-ar="ملخص المريض">Patient Snapshot</strong>
             <ul>
-              <li>Submission ID: {{ snapshot.get("submission_id", "") }}</li>
-              <li>Age: {{ snapshot.get("age", "") }}</li>
-              <li>Sex: {{ snapshot.get("sex", "") }}</li>
-              <li>Question: {{ snapshot.get("presenting_question", "") }}</li>
+              <li><span data-i18n-en="Submission ID:" data-i18n-ar="رقم الاستمارة:">Submission ID:</span> {{ snapshot.get("submission_id", "") }}</li>
+              <li><span data-i18n-en="Age:" data-i18n-ar="العمر:">Age:</span> {{ snapshot.get("age", "") }}</li>
+              <li><span data-i18n-en="Sex:" data-i18n-ar="النوع:">Sex:</span> {{ snapshot.get("sex", "") }}</li>
+              <li><span data-i18n-en="Question:" data-i18n-ar="السؤال:">Question:</span> {{ snapshot.get("presenting_question", "") }}</li>
             </ul>
           </div>
           {{ render_list("Urgent Safety Alerts", final_report.get("urgent_safety_alerts", []), danger=True) }}

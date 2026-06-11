@@ -10,53 +10,67 @@
 <body>
   <main>
     <div class="toolbar">
-      <h1>Submitted Forms</h1>
-      <a href="/">Back to form</a>
-      <!-- Bell button is injected here by notifications.js -->
+      <h1 data-i18n-en="Submitted Forms" data-i18n-ar="الاستمارات المرسلة">Submitted Forms</h1>
+      <div class="toolbar-actions">
+        <a href="/" data-i18n-en="Back to form" data-i18n-ar="العودة إلى الاستمارة">Back to form</a>
+        <button
+          id="language-toggle"
+          class="language-toggle"
+          type="button"
+          aria-pressed="false"
+          data-i18n-en="العربية"
+          data-i18n-ar="English"
+        >العربية</button>
+        <!-- Bell button is injected here by notifications.js -->
+      </div>
     </div>
 
     {% if not submissions %}
-      <p class="empty">No forms submitted yet.</p>
+      <p class="empty" data-i18n-en="No forms submitted yet." data-i18n-ar="لا توجد استمارات مرسلة حتى الآن.">No forms submitted yet.</p>
     {% else %}
       {% for submission in submissions %}
         <article class="submission" id="submission-{{ submission.id }}">
-          <h2>Submission #{{ submission.id }}</h2>
+          <h2>
+            <span data-i18n-en="Submission" data-i18n-ar="الاستمارة">Submission</span>
+            #{{ submission.id }}
+          </h2>
           <div class="summary">
-            <span><strong>Name:</strong> {{ submission.full_name }}</span>
-            <span><strong>Age:</strong> {{ submission.age }}</span>
-            <span><strong>Mobile:</strong> {{ submission.mobile }}</span>
-            <span><strong>Email:</strong> {{ submission.email }}</span>
+            <span><strong data-i18n-en="Name:" data-i18n-ar="الاسم:">Name:</strong> {{ submission.full_name }}</span>
+            <span><strong data-i18n-en="Age:" data-i18n-ar="العمر:">Age:</strong> {{ submission.age }}</span>
+            <span><strong data-i18n-en="Mobile:" data-i18n-ar="الهاتف:">Mobile:</strong> {{ submission.mobile }}</span>
+            <span><strong data-i18n-en="Email:" data-i18n-ar="البريد الإلكتروني:">Email:</strong> {{ submission.email }}</span>
           </div>
 
           <div class="submission-tabs">
             {% if submission.report_pdf_url %}
-              <a class="submission-tab submission-download" href="{{ submission.report_pdf_url }}" target="_blank" download>Download PDF Report</a>
+              <a class="submission-tab submission-download" href="{{ submission.report_pdf_url }}" target="_blank" download data-i18n-en="Download PDF Report" data-i18n-ar="تنزيل تقرير PDF">Download PDF Report</a>
             {% elif submission.report_pdf_error %}
-              <span class="submission-tab submission-tab-muted">PDF unavailable</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="PDF unavailable" data-i18n-ar="ملف PDF غير متاح">PDF unavailable</span>
             {% else %}
-              <span class="submission-tab submission-tab-muted">Download PDF Report</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="Download PDF Report" data-i18n-ar="تنزيل تقرير PDF">Download PDF Report</span>
             {% endif %}
-            <button class="submission-tab" type="button" data-panel-target="{{ submission.form_panel_id }}" aria-controls="{{ submission.form_panel_id }}" aria-expanded="false">Patient Form Answers</button>
-            <button class="submission-tab" type="button" data-panel-target="{{ submission.ai_panel_id }}" aria-controls="{{ submission.ai_panel_id }}" aria-expanded="false">AI Clinical Report</button>
+            <button class="submission-tab" type="button" data-panel-target="{{ submission.form_panel_id }}" aria-controls="{{ submission.form_panel_id }}" aria-expanded="false" data-i18n-en="Patient Form Answers" data-i18n-ar="إجابات استمارة المريض">Patient Form Answers</button>
+            <button class="submission-tab" type="button" data-panel-target="{{ submission.ai_panel_id }}" aria-controls="{{ submission.ai_panel_id }}" aria-expanded="false" data-i18n-en="AI Clinical Report" data-i18n-ar="التقرير السريري بالذكاء الاصطناعي">AI Clinical Report</button>
+            <button class="submission-tab" type="button" data-panel-target="{{ submission.ai_summary_panel_id }}" aria-controls="{{ submission.ai_summary_panel_id }}" aria-expanded="false" data-i18n-en="Summary" data-i18n-ar="ملخص">AI Summary</button>
             {% if submission.iief_data %}
-              <button class="submission-tab" type="button" data-panel-target="{{ submission.iief_panel_id }}" aria-controls="{{ submission.iief_panel_id }}" aria-expanded="false">IIEF Questionnaire</button>
+              <button class="submission-tab" type="button" data-panel-target="{{ submission.iief_panel_id }}" aria-controls="{{ submission.iief_panel_id }}" aria-expanded="false" data-i18n-en="IIEF Questionnaire" data-i18n-ar="استبيان IIEF">IIEF Questionnaire</button>
             {% else %}
-              <span class="submission-tab submission-tab-muted">No IIEF Data</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="No IIEF Data" data-i18n-ar="لا توجد بيانات IIEF">No IIEF Data</span>
             {% endif %}
             {% if submission.pedt_data %}
-              <button class="submission-tab" type="button" data-panel-target="{{ submission.pedt_panel_id }}" aria-controls="{{ submission.pedt_panel_id }}" aria-expanded="false">PEDT Questionnaire</button>
+              <button class="submission-tab" type="button" data-panel-target="{{ submission.pedt_panel_id }}" aria-controls="{{ submission.pedt_panel_id }}" aria-expanded="false" data-i18n-en="PEDT Questionnaire" data-i18n-ar="استبيان PEDT">PEDT Questionnaire</button>
             {% else %}
-              <span class="submission-tab submission-tab-muted">No PEDT Data</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="No PEDT Data" data-i18n-ar="لا توجد بيانات PEDT">No PEDT Data</span>
             {% endif %}
             {% if submission.low_libido_data %}
-              <button class="submission-tab" type="button" data-panel-target="{{ submission.low_libido_panel_id }}" aria-controls="{{ submission.low_libido_panel_id }}" aria-expanded="false">Low Libido Questionnaire</button>
+              <button class="submission-tab" type="button" data-panel-target="{{ submission.low_libido_panel_id }}" aria-controls="{{ submission.low_libido_panel_id }}" aria-expanded="false" data-i18n-en="Low Libido Questionnaire" data-i18n-ar="استبيان انخفاض الرغبة">Low Libido Questionnaire</button>
             {% else %}
-              <span class="submission-tab submission-tab-muted">No Low Libido Data</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="No Low Libido Data" data-i18n-ar="لا توجد بيانات انخفاض الرغبة">No Low Libido Data</span>
             {% endif %}
             {% if submission.ehs_data %}
-              <button class="submission-tab" type="button" data-panel-target="{{ submission.ehs_panel_id }}" aria-controls="{{ submission.ehs_panel_id }}" aria-expanded="false">Erection Hardness Scale</button>
+              <button class="submission-tab" type="button" data-panel-target="{{ submission.ehs_panel_id }}" aria-controls="{{ submission.ehs_panel_id }}" aria-expanded="false" data-i18n-en="Erection Hardness Scale" data-i18n-ar="مقياس صلابة الانتصاب">Erection Hardness Scale</button>
             {% else %}
-              <span class="submission-tab submission-tab-muted">No EHS Data</span>
+              <span class="submission-tab submission-tab-muted" data-i18n-en="No EHS Data" data-i18n-ar="لا توجد بيانات EHS">No EHS Data</span>
             {% endif %}
           </div>
 
@@ -91,6 +105,22 @@
             <div class="ai-report-content">
               {{ submission.ai_html|safe }}
             </div>
+          </div>
+
+          <div id="{{ submission.ai_summary_panel_id }}" class="submission-panel ai-summary-panel" hidden>
+            <div class="ai-summary-header">
+              <h3 data-i18n-en="AI Clinical Summary" data-i18n-ar="الملخص السريري بالذكاء الاصطناعي">AI Clinical Summary</h3>
+              <p data-i18n-en="Pinpoint summary of the generated AI clinical results." data-i18n-ar="ملخص نقطي مختصر لنتائج التقرير السريري بالذكاء الاصطناعي.">Pinpoint summary of the generated AI clinical results.</p>
+            </div>
+            {% if submission.ai_summary_points %}
+              <ul class="ai-summary-points">
+                {% for point in submission.ai_summary_points %}
+                  <li>{{ point }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="ai-missing" data-i18n-en="No summarized AI results are available for this submission yet." data-i18n-ar="لا توجد نتائج ذكاء اصطناعي ملخصة لهذه الاستمارة حتى الآن.">No summarized AI results are available for this submission yet.</p>
+            {% endif %}
           </div>
 
           {% if submission.iief_data %}

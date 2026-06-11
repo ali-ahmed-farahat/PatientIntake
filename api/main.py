@@ -26,6 +26,7 @@ from api.utils import (
     get_db_connection,
     get_patient_by_code,
     init_db,
+    build_ai_summary_points,
     lookup_drugbank,
     lookup_openfda_label,
     parse_possible_drug_names,
@@ -318,12 +319,14 @@ def submissions():
             "email": row["email"] or "",
             "form_panel_id": f"form-panel-{submission_id}",
             "ai_panel_id": f"ai-panel-{submission_id}",
+            "ai_summary_panel_id": f"ai-summary-panel-{submission_id}",
             "iief_panel_id": f"iief-panel-{submission_id}",
             "pedt_panel_id": f"pedt-panel-{submission_id}",
             "ehs_panel_id": f"ehs-panel-{submission_id}",
             "low_libido_panel_id": f"low-libido-panel-{submission_id}",
             "report_pdf_url": report_pdf.get("url"),
             "report_pdf_error": report_pdf.get("error"),
+            "ai_summary_points": build_ai_summary_points(pipeline),
             "iief_data": iief_data,
             "pedt_data": pedt_data,
             "ehs_data": ehs_data,
@@ -342,6 +345,7 @@ def submissions():
 def submit_form():
     """Save a submitted intake form, then run the configured clinical agent workflow."""
     data = request.json or {}
+    initial_payload = dict(data)
     
     conn = get_db_connection()
     cur = conn.cursor()
@@ -354,15 +358,26 @@ def submit_form():
         data.get("age"),
         data.get("mobile"),
         data.get("email"),
-        json.dumps(data)
+        json.dumps(initial_payload, ensure_ascii=False)
     ))
 
     submission_id = cur.lastrowid
+    initial_payload["clinical_pipeline"] = {
+        "status": "running",
+        "submission_id": submission_id,
+        "stopped_after": None,
+        "message": "Clinical workflow is running in the background.",
+    }
+    cur.execute(
+        "UPDATE intake_forms SET form_data = ? WHERE id = ?",
+        (json.dumps(initial_payload, ensure_ascii=False), submission_id),
+    )
     conn.commit()
     conn.close()
 
     # Spawn background thread to run clinical pipeline
     def run_pipeline_bg(data_copy, sub_id):
+        print(f"[pipeline] submission #{sub_id} started")
         try:
             pipeline_result = run_full_clinical_pipeline(data_copy, submission_id=sub_id)
         except Exception as exc:
@@ -371,6 +386,13 @@ def submit_form():
                 "submission_id": sub_id,
                 "error": str(exc),
             }
+            print(f"[pipeline] submission #{sub_id} failed: {exc}")
+        else:
+            print(
+                f"[pipeline] submission #{sub_id} finished: "
+                f"status={pipeline_result.get('status')} "
+                f"stopped_after={pipeline_result.get('stopped_after')}"
+            )
 
         conn_bg = get_db_connection()
         row = conn_bg.execute("SELECT form_data FROM intake_forms WHERE id = ?", (sub_id,)).fetchone()
@@ -390,7 +412,15 @@ def submit_form():
         conn_bg.commit()
         conn_bg.close()
 
-    threading.Thread(target=run_pipeline_bg, args=(dict(data), submission_id), daemon=True).start()
+        _broadcast_notification({
+            "type": "pipeline_completed",
+            "submission_id": sub_id,
+            "status": pipeline_result.get("status"),
+            "stopped_after": pipeline_result.get("stopped_after"),
+            "timestamp": time.strftime("%H:%M"),
+        })
+
+    threading.Thread(target=run_pipeline_bg, args=(dict(data), submission_id), daemon=False).start()
 
     _broadcast_notification({
         "submission_id": submission_id,
@@ -763,4 +793,5 @@ def clinical_agent_route():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    debug_mode = os.environ.get("FLASK_DEBUG", "").strip().lower() in {"1", "true", "yes", "on"}
+    app.run(host="127.0.0.1", port=5000, debug=debug_mode, use_reloader=False)
